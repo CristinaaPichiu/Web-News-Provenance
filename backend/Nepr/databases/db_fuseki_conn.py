@@ -1,8 +1,7 @@
-import os
 import requests
-from SPARQLWrapper import SPARQLWrapper, JSON
 from dotenv import load_dotenv
-
+from SPARQLWrapper import SPARQLWrapper, JSON, POST
+import os
 # Load environment variables from .env file
 load_dotenv()
 
@@ -29,18 +28,6 @@ def check_connection(fuseki_url):
     except requests.exceptions.RequestException as e:
         print(f"Connection to {fuseki_url} failed: {e}")
 
-
-def test_endpoints(fuseki_url, endpoints):
-    """
-    Tests all the given endpoints for the Fuseki server.
-    :param fuseki_url: Base URL of the Fuseki server.
-    :param endpoints: List of endpoints to test.
-    """
-    for endpoint in endpoints:
-        full_url = f"{fuseki_url}{endpoint}"
-        print(f"Testing endpoint: {full_url}")
-        check_connection(full_url)
-
 def run_sparql_query(fuseki_url, query):
     """
     Runs a SPARQL query on the Fuseki server using SPARQLWrapper.
@@ -66,18 +53,44 @@ def run_sparql_query(fuseki_url, query):
         return None
 
 
-def test_sparql_query(fuseki_url):
+def insert_graph_data(fuseki_url, graph_uri, triples):
     """
-    Tests a sample SPARQL query on the Fuseki server.
-    :param fuseki_url: URL of the Fuseki server.
+    Inserts data into a named graph in a Fuseki server.
+
+    Args:
+        fuseki_url (str): The endpoint URL of the Fuseki dataset (e.g., http://localhost:3030/dataset).
+        graph_uri (str): The URI of the named graph (e.g., http://example.org/myGraph).
+        triples (str): The triples to insert in Turtle format.
+
+    Returns:
+        dict: The response from the Fuseki server.
     """
-    query = "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10"
-    results = run_sparql_query(fuseki_url, query)
-    if results:
-        print("SPARQL Query Results:")
-        print(results)
-    else:
-        print("No results or an error occurred.")
+    try:
+        # SPARQL Update endpoint URL
+        update_url = f"{fuseki_url}/update"
+
+        # SPARQL query to insert data
+        query = f"""
+        INSERT DATA {{
+          GRAPH <{graph_uri}> {{
+            {triples}
+          }}
+        }}
+        """
+
+        # Initialize SPARQLWrapper
+        sparql = SPARQLWrapper(update_url)
+        sparql.setMethod(POST)
+        sparql.setQuery(query)
+        sparql.setReturnFormat(JSON)
+
+        # Execute the query
+        response = sparql.query().convert()
+
+        return {"status": "success", "response": response}
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 def insert_data(fuseki_url, subject, predicate, obj):
     """
@@ -112,23 +125,6 @@ def insert_data(fuseki_url, subject, predicate, obj):
         return None
 
 
-def test_insert(fuseki_url):
-    """
-    Tests inserting data into the Fuseki server.
-    :param fuseki_url: URL of the Fuseki server.
-    """
-    subject = "http://example.org/subject1"
-    predicate = "http://example.org/property1"
-    obj = "object1"
-    response = insert_data(fuseki_url, subject, predicate, obj)
-    if response:
-        print("Data inserted successfully.")
-    else:
-        print("Data insertion failed.")
-
-from SPARQLWrapper import SPARQLWrapper, JSON
-import os
-
 def delete_data(fuseki_url, subject, predicate, obj):
     """
     Deletes a triple from the Fuseki dataset.
@@ -161,29 +157,7 @@ def delete_data(fuseki_url, subject, predicate, obj):
         print(f"Error deleting data: {e}")
         return None
 
-
-def test_delete(fuseki_url):
-    """
-    Tests deleting data from the Fuseki server.
-    :param fuseki_url: URL of the Fuseki server.
-    """
-    subject = "http://example.org/subject1"
-    predicate = "http://example.org/property1"
-    obj = "object1"
-    response = delete_data(fuseki_url, subject, predicate, obj)
-    if response:
-        print("Data deleted successfully.")
-    else:
-        print("Data deletion failed.")
-def main():
+if __name__ == "__main__":
     fuseki_url = os.getenv("FUSEKI_URL")
     print(f"Fuseki Base URL: {fuseki_url}")
-    test_endpoints(fuseki_url, ENDPOINTS)
-    test_insert(fuseki_url)
-    test_sparql_query(fuseki_url)
-    test_delete(fuseki_url)
-    test_sparql_query(fuseki_url)
-
-
-if __name__ == "__main__":
-    main()
+    check_connection(fuseki_url)
