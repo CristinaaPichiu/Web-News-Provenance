@@ -16,14 +16,15 @@ class SPARQLService:
         Builds an RDF graph for the given URL using GraphBuilder and inserts it into the Fuseki dataset.
         """
         metadata = self.graph_builder.extract_metadata(url)
-        self.graph_builder.insert_metadata_to_graph(url, metadata)
-        author_name = self.graph_builder.extract_author()
-        if author_name:
-            self.graph_builder.add_entity_to_graph(url, author_name, entity_type='author')
-        publisher_name = self.graph_builder.extract_publisher()
-        if publisher_name:
-            self.graph_builder.add_entity_to_graph(url, publisher_name, is_organization=True, entity_type='publisher')
-        self.graph_builder.add_content_length_to_graph(url)
+        self.graph_builder.insert_json_ld_to_graph(url, self.graph_builder.json_ld_data)
+        # author_name = self.graph_builder.extract_author()
+        # if author_name:
+        #     self.graph_builder.add_entity_to_graph(url, author_name, entity_type='author')
+        # publisher_name = self.graph_builder.extract_publisher()
+        # if publisher_name:
+        #     self.graph_builder.add_entity_to_graph(url, publisher_name, is_organization=True, entity_type='publisher')
+        # self.graph_builder.add_content_length_to_graph(url)
+        # self.graph_builder.add_inLanguage_to_graph(url)
         rdf_graph = self.graph_builder.graph
 
         sparql_endpoint = f"{self.fuseki_url}/NEPR-2024/data"
@@ -42,5 +43,4 @@ class SPARQLService:
 
 # Example usage
 # service = SPARQLService()
-# service.insert_graph("https://www.bbc.com/news/articles/ce8dz0n8xldo")
-
+# service.insert_graph("https://www.bbc.com/news/articles/cgk18pdnxmmo")
