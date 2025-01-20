@@ -1,209 +1,70 @@
 import json
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import os
 from bs4 import BeautifulSoup
 from langcodes import Language
 from rdflib import Graph, URIRef, Literal
 import requests
 import extruct
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.wait import WebDriverWait
 from models.scraper import BeautifulSoupScraper
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
+
 
 class GraphBuilder:
-    def __init__(self):
+    def __init__(self, url):
         self.graph = Graph()
         self.json_ld_data = []
         self.rdfa_data = []
         self.scraper = BeautifulSoupScraper()
-        self.driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=Options().add_argument("--headless"))
-        self.soup = None
-    def extract_metadata(self, url):
+        self.json_ld_data = self.scraper.extract_json_ld(url)
+
+    def add_entity_to_graph(self, entity_uri, entity_data, is_organization=False, entity_type='author'):
         """
-        Extracts structured metadata (JSON-LD, RDFa, etc.) from a given URL.
-
-        Args:
-            url (str): The URL of the webpage to extract metadata from.
-
-        Returns:
-            dict: A dictionary containing all extracted metadata.
+        Adds an entity to the graph, handling both authors and publishers, and enriching their details if available.
         """
-        try:
+        # Check if the entity is a literal (name) or a dictionary (additional details)
+        if isinstance(entity_data, str):
+            self.graph.add((entity_uri, URIRef("http://schema.org/name"), Literal(entity_data)))
 
-            response = requests.get(url, timeout=10)
-            soup = BeautifulSoup(response.content, 'html.parser')
-            response.raise_for_status()
-            html_content = response.text
-            metadata = extruct.extract(
-                html_content,
-                base_url=url,
-                syntaxes=["json-ld", "microdata", "rdfa", "opengraph"]
-            )
-            self.soup = soup
-            self.json_ld_data = self.extract_main_article_json_ld(soup, html_content, url)
-            print(self.json_ld_data)
-            self.rdfa_data = metadata.get("rdfa", [])
-            return metadata
-        except requests.exceptions.RequestException as e:
-            return {"json-ld": [], "rdfa": []}
-
-    def extract_json_ld_from_html(self,url):
-        if 'youtube' not in url:
-            json_ld_scripts = self.soup.find_all("script", type="application/ld+json")
-            if json_ld_scripts:
-                return json_ld_scripts
+            # Add additional details (from Wikidata or other sources) for authors or organizations
+            if is_organization:
+                self.add_organization_details(entity_uri, entity_data)
             else:
-                return None;
-        self.driver.get(url)
-        try:
-            # Wait for the body tag to be loaded (or another relevant tag or element on your page)
-            WebDriverWait(self.driver, 20).until(
-                EC.presence_of_element_located((By.TAG_NAME, 'player-microformat-renderer'))
-            )
-        except Exception as e:
-            print(f"Error waiting for page to load: {e}")
-            self.driver.quit()
-            return None
+                self.add_additional_person_details(entity_uri, entity_data)
 
-            # Get the page source after dynamic content has been loaded
-        html_content = self.driver.page_source
-        self.driver.quit()  # Close the browser
-        soup = BeautifulSoup(html_content, 'html.parser')
-        json_ld_scripts = soup.find_all("script", type="application/ld+json")
-
-        if not json_ld_scripts:
-            print("No JSON-LD scripts found.")
-            return None
-
-        return json_ld_scripts
-
-    def extract_main_article_json_ld(self, soup, html_content, page_url):
-        """
-        Extracts the main article JSON-LD object, prioritizing one with matching 'mainEntityOfPage' or 'url'.
-        If no match is found, it returns the article with the longest title or the one with the given page URL.
-
-        Args:
-            soup (BeautifulSoup): The parsed HTML content of the page.
-            html_content (str): The raw HTML content of the webpage.
-            page_url (str): The URL of the webpage.
-
-        Returns:
-            dict: The JSON-LD object for the main article, or None if no match is found.
-        """
-        json_ld_scripts = self.extract_json_ld_from_html(page_url)
-
-        json_ld_script = []
-        types = {"NewsArticle", "Article", "ReportageNewsArticle", "VideoObject", "BlogPosting"}
-        # Parse all JSON-LD scripts and collect articles
-        for script in json_ld_scripts:
-            try:
-                json_data = json.loads(script.string)
-                print(f"Parsed JSON data: {json_data}")
-
-                if isinstance(json_data, list):
-                    # Handle the case where json_data is a list
-                    for item in json_data:
-                        print(f"Inspecting list item: {item}")
-                        if isinstance(item.get('@type'), list):
-                            # Check if any type in the list matches desired types
-                            if any(t in types for t in item.get('@type')):
-                                print(f"Match found in list item (with '@type' list): {item}")
-                                json_ld_script.append(item)
-                                # Compare with @id inside mainEntityOfPage
-                                if item.get("mainEntityOfPage") and item["mainEntityOfPage"].get("@id") == page_url:
-                                    print("Match found in list item (with '@type' list):")
-                                    return item
-                        elif isinstance(item.get('@type'), str):
-                            # Single type check
-                            if item.get('@type') in types:
-                                print(f"Match found in list item (with '@type' string): {item}")
-                                json_ld_script.append(item)
-                                # Compare with @id inside mainEntityOfPage
-                                if item.get("mainEntityOfPage") and item["mainEntityOfPage"].get("@id") == page_url:
-                                    print("Match found in list item (with '@type' string):")
-                                    return item
-                elif isinstance(json_data, dict):
-                    # Handle the case where json_data is a dictionary
-                    print(f"Inspecting dictionary item: {json_data}")
-                    if isinstance(json_data.get('@type'), str):
-                        if json_data.get('@type') in types:
-                            json_ld_script.append(json_data)
-                            if json_data.get("mainEntityOfPage"):
-                                print("Match found in dictionary item:")
-                                return json_data
-                    elif isinstance(json_data.get('@type'), list):
-                        if any(t in types for t in json_data.get('@type')):
-                            json_ld_script.append(json_data)
-                            if json_data.get("mainEntityOfPage") and json_data["mainEntityOfPage"].get(
-                                    "@id") == page_url:
-                                print("Match found in dictionary item (with '@type' list):")
-                                return json_data
-            except json.JSONDecodeError:
-                print("JSONDecodeError occurred, skipping this script.")
-                continue
-
-        # If no match found, return the first article if available
-        if json_ld_script:
-            return json_ld_script[0]
-
-        print("No matching article found.")
-        return None
-
-    def extract_author(self):
-        for json_ld in self.json_ld_data:
-            author = json_ld.get('author')
-            if isinstance(author, list) and author:
-                return author[0].get('name')
-            elif isinstance(author, dict):
-                return author.get('name')
-        return None
-
-    def extract_publisher(self):
-        for json_ld in self.json_ld_data:
-            publisher = json_ld.get('publisher')
-            if isinstance(publisher, list) and publisher:
-                return publisher[0].get('name')
-            elif isinstance(publisher, dict):
-                return publisher.get('name')
-        return None
-
-    def add_entity_to_graph(self, article_url, entity_name, is_organization=False, entity_type='author'):
-        entity_uri = URIRef(f"/{entity_type}s/{entity_name.replace(' ', '_')}")
-        self.graph.add((URIRef(article_url), URIRef(f"http://schema.org/{entity_type}"), entity_uri))
-        self.graph.add((entity_uri, URIRef("http://schema.org/name"), Literal(entity_name)))
-
-        if is_organization:
-            self.add_organization_details(entity_uri, entity_name)
-        else:
-            self.add_additional_person_details(entity_uri, entity_name)
+        elif isinstance(entity_data, dict):
+            # If it's a dictionary (additional details), only add the details
+            # In this case, we assume the entity's name has already been added
+            print(f"Adding additional details for {entity_type}: {entity_data}")
+            if is_organization:
+                self.add_organization_details(entity_uri, entity_data['name'])
+            else:
+                self.add_additional_person_details(entity_uri, entity_data['name'])
 
     def add_additional_person_details(self, entity_uri, entity_name):
         wikidata_data = self.get_wikidata_data(entity_name)
+        print(f"Adding additional details for person: {wikidata_data}")
         if wikidata_data:
             for key, value in wikidata_data.items():
                 if value:
-                    self.graph.add((entity_uri, URIRef(f"http://schema.org/{key}"), Literal(value)))
+                    self.graph.add((URIRef(entity_uri), URIRef(f"http://schema.org/{key}"), Literal(value)))
 
     def add_organization_details(self, entity_uri, entity_name):
         wikidata_data = self.get_organization_wikidata_data(entity_name)
+        print(f"Adding additional details for organization: {wikidata_data}")
         if wikidata_data:
             for key, value in wikidata_data.items():
                 if value:
-                    self.graph.add((entity_uri, URIRef(f"http://schema.org/{key}"), Literal(value)))
+                    self.graph.add((URIRef(entity_uri), URIRef(f"http://schema.org/{key}"), Literal(value)))
 
     def get_wikidata_data(self, entity_name):
         """
-        Fetch structured data for an entity (author or organization) from Wikidata.
+        Fetch structured data for an entity (author or organization) from Wikidata with occupation filter for "science journalist".
         """
         sparql_endpoint = "https://query.wikidata.org/sparql"
+
         query = f"""
         SELECT ?entity ?entityLabel ?nationality ?nationalityLabel ?occupation ?occupationLabel 
                ?birthDate ?birthPlace ?birthPlaceLabel ?deathDate ?deathPlace ?deathPlaceLabel 
-               ?affiliation ?affiliationLabel ?gender WHERE {{
+               ?affiliation ?affiliationLabel ?gender ?genderLabel WHERE {{
           ?entity rdfs:label "{entity_name}"@en;
                   OPTIONAL {{ ?entity wdt:P27 ?nationality. }} 
                   OPTIONAL {{ ?entity wdt:P106 ?occupation. }} 
@@ -213,29 +74,50 @@ class GraphBuilder:
                   OPTIONAL {{ ?entity wdt:P570 ?deathDate. }} 
                   OPTIONAL {{ ?entity wdt:P108 ?affiliation. }} 
                   OPTIONAL {{ ?entity wdt:P21 ?gender. }} 
-          SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+        SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
         }}
-        LIMIT 1
+        LIMIT 5
         """
+
         try:
             response = requests.get(sparql_endpoint, params={"query": query, "format": "json"})
             response.raise_for_status()
 
             data = response.json()
             if data['results']['bindings']:
-                result = data['results']['bindings'][0]
+                for result in data['results']['bindings']:
+                    occupation = result.get('occupationLabel', {}).get('value', '')
+                    if "journalist" in occupation.lower():
+                        print(f"Found journalist: {result}")
+                        # Filter for a result with 'journalist' in occupation
+                        return {
+                            'nationality': result['nationalityLabel'][
+                                'value'] if 'nationalityLabel' in result else None,
+                            'jobTitle': occupation,
+                            'birthDate': result['birthDate']['value'] if 'birthDate' in result else None,
+                            'birthPlace': result['birthPlaceLabel']['value'] if 'birthPlaceLabel' in result else None,
+                            'deathDate': result['deathDate']['value'] if 'deathDate' in result else None,
+                            'deathPlace': result['deathPlaceLabel']['value'] if 'deathPlaceLabel' in result else None,
+                            'affiliation': result['affiliationLabel'][
+                                'value'] if 'affiliationLabel' in result else None,
+                            'gender': result['genderLabel']['value'] if 'genderLabel' in result else None
+                        }
+                take_first = data['results']['bindings'][0]
                 return {
-                    'nationality': result['nationalityLabel']['value'] if 'nationalityLabel' in result else None,
-                    'jobTitle': result['occupationLabel']['value'] if 'occupationLabel' in result else None,
-                    'birthDate': result['birthDate']['value'] if 'birthDate' in result else None,
-                    'birthPlace': result['birthPlaceLabel']['value'] if 'birthPlaceLabel' in result else None,
-                    'deathDate': result['deathDate']['value'] if 'deathDate' in result else None,
-                    'deathPlace': result['deathPlaceLabel']['value'] if 'deathPlaceLabel' in result else None,
-                    'affiliation': result['affiliationLabel']['value'] if 'affiliationLabel' in result else None,
-                    'gender': result['genderLabel']['value'] if 'genderLabel' in result else None
+                    'nationality': take_first['nationalityLabel'][
+                        'value'] if 'nationalityLabel' in take_first else None,
+                    'jobTitle': take_first['occupationLabel']['value'] if 'occupationLabel' in take_first else None,
+                    'birthDate': take_first['birthDate']['value'] if 'birthDate' in take_first else None,
+                    'birthPlace': take_first['birthPlaceLabel']['value'] if 'birthPlaceLabel' in take_first else None,
+                    'deathDate': take_first['deathDate']['value'] if 'deathDate' in take_first else None,
+                    'deathPlace': take_first['deathPlaceLabel']['value'] if 'deathPlaceLabel' in take_first else None,
+                    'affiliation': take_first['affiliationLabel'][
+                        'value'] if 'affiliationLabel' in take_first else None,
+                    'gender': take_first['genderLabel']['value'] if 'genderLabel' in take_first else None
                 }
             return None
         except requests.exceptions.RequestException as e:
+            print(f"Error: {e}")
             return None
 
     def get_organization_wikidata_data(self, entity_name):
@@ -243,40 +125,54 @@ class GraphBuilder:
         Fetch structured data for an organization (e.g., nationality, industry, CEO, publishing principles) from Wikidata.
         """
         sparql_endpoint = "https://query.wikidata.org/sparql"
+
+        # Construct the SPARQL query for fetching data about the organization
         query = f"""
-        SELECT ?entity ?entityLabel ?industry ?industryLabel ?foundingDate ?headquartersLocation 
-               ?CEO ?CEOLabel ?officialWebsite ?publishingPrinciples WHERE {{
-          ?entity rdfs:label "{entity_name}"@en;
-                 wdt:P31 wd:Q43229;  # Organization class
-                 wdt:P452 ?industry;  # Industry
-                 wdt:P571 ?foundingDate;  # Founding Date
-                 wdt:P159 ?headquartersLocation;  # Headquarters Location
-                 wdt:P1323 ?CEO;  # CEO
-                 wdt:P856 ?officialWebsite.  # Official Website
-                 OPTIONAL {{ ?entity wdt:P1454 ?publishingPrinciples. }}  # Optional: publishing principles, ethical guidelines, etc.
-          SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
-        }}
-        LIMIT 1
-        """
+                SELECT ?entity ?entityLabel ?industry ?industryLabel ?foundingDate ?headquartersLocation 
+                       ?CEO ?CEOLabel ?officialWebsite ?publishingPrinciples WHERE {{
+                  ?entity rdfs:label "{entity_name}"@en;
+                          wdt:P31 wd:Q43229;  # Organization class
+                          OPTIONAL {{ ?entity wdt:P452 ?industry. }}  # Industry
+                          OPTIONAL {{ ?entity wdt:P571 ?foundingDate. }}  # Founding Date
+                          OPTIONAL {{ ?entity wdt:P159 ?headquartersLocation. }}  # Headquarters Location
+                          OPTIONAL {{ ?entity wdt:P1323 ?CEO. }}  # CEO
+                          OPTIONAL {{ ?entity wdt:P856 ?officialWebsite. }}  # Official Website
+                          OPTIONAL {{ ?entity wdt:P1454 ?publishingPrinciples. }}  # Publishing Principles
+                SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+                }}
+                LIMIT 5
+                """
+
         try:
+            # Make the request to the SPARQL endpoint
             response = requests.get(sparql_endpoint, params={"query": query, "format": "json"})
             response.raise_for_status()
 
+            # Print the response for debugging
+            print(f"Response: {response.json()}")
+
+            # Parse the JSON response
             data = response.json()
+
             if data['results']['bindings']:
+                # Get the first result if available
                 result = data['results']['bindings'][0]
+                print(f"Found organization: {result}")
+                # Extract the values, returning None if the key doesn't exist
                 return {
-                    'industry': result['industryLabel']['value'] if 'industryLabel' in result else None,
-                    'foundingDate': result['foundingDate']['value'] if 'foundingDate' in result else None,
-                    'headquartersLocation': result['headquartersLocation'][
-                        'value'] if 'headquartersLocation' in result else None,
-                    'CEO': result['CEOLabel']['value'] if 'CEOLabel' in result else None,
-                    'officialWebsite': result['officialWebsite']['value'] if 'officialWebsite' in result else None,
-                    'publishingPrinciples': result['publishingPrinciples'][
-                        'value'] if 'publishingPrinciples' in result else None
+                    'industry': result.get('industryLabel', {}).get('value', None),
+                    'foundingDate': result.get('foundingDate', {}).get('value', None),
+                    'headquartersLocation': result.get('headquartersLocation', {}).get('value', None),
+                    'CEO': result.get('CEOLabel', {}).get('value', None),
+                    'officialWebsite': result.get('officialWebsite', {}).get('value', None),
+                    'publishingPrinciples': result.get('publishingPrinciples', {}).get('value', None)
                 }
+
+            # If no results are found, return None
             return None
         except requests.exceptions.RequestException as e:
+            # Handle errors gracefully by returning None
+            print(f"Request failed: {e}")
             return None
 
     def insert_metadata_to_graph(self, article_url, metadata):
@@ -284,24 +180,64 @@ class GraphBuilder:
             self.insert_json_ld_to_graph(article_url, json_ld)
 
     def insert_json_ld_to_graph(self, article_url, json_ld):
-        for key, value in json_ld.items():
-            # Create the full URI using a base URI
-            uri = f"http://schema.org/{key}"
+        if json_ld is None:
+            return None
 
-            # Check if the value is a list or other complex structure, and handle accordingly
+        for key, value in json_ld.items():
+            predicate_uri = URIRef(f"http://schema.org/{key}")
+            namespace = os.getenv("NAMESPACE")
             if isinstance(value, list):
                 for item in value:
-                    self.graph.add((URIRef(article_url), URIRef(uri), Literal(item)))
+                    if isinstance(item, dict):
+                        node_uri = self.generate_entity_uri_item(namespace, key, item)
+                        self.graph.add((URIRef(article_url), predicate_uri, node_uri))
+                        self.insert_json_ld_to_graph(node_uri, item)
+                    elif isinstance(item, str) and item.startswith("http"):  # Check if item is a URL
+                        # Ensure the URL is treated as a URIRef
+                        url_uri = URIRef(item)
+                        self.graph.add((URIRef(article_url), predicate_uri, url_uri))
+                    else:
+                        self.graph.add((URIRef(article_url), predicate_uri, Literal(item)))
+
+            elif isinstance(value, dict):
+                if key == "image" and "@type" in value and value["@type"] == "ImageObject":
+
+                    if "url" in value:
+                        # If the 'url' field is a list of URLs, process each one
+                        for url in value["url"]:
+                            node_uri = self.generate_entity_uri_item(namespace, key, url)
+                            self.graph.add((URIRef(node_uri), predicate_uri, URIRef(url)))
+                else:
+                    node_uri = self.generate_entity_uri_item(namespace, key, value)
+                    self.graph.add((URIRef(article_url), predicate_uri, node_uri))
+                    if key == 'author' or key == 'publisher':
+                        self.add_entity_to_graph(node_uri, value, is_organization=(key == 'publisher'), entity_type=key)
+                    # Recursively add the dictionary as a node
+                    self.insert_json_ld_to_graph(node_uri, value)
             else:
-                self.graph.add((URIRef(article_url), URIRef(uri), Literal(value)))
+                self.graph.add((URIRef(article_url), predicate_uri, Literal(value)))
+
+    @staticmethod
+    def generate_entity_uri_item(namespace, key, item):
+        if isinstance(item, dict):
+            if 'url' in item and item['url'] != "":
+                return URIRef(item['url'])
+            elif 'name' in item:
+                name_normalized = item['name'].replace(' ', '_')
+                return URIRef(f"{namespace}/{key}/{name_normalized}")
+            else:
+                return URIRef(f"{namespace}/{key}/{hash(str(item))}")
+        else:
+            normalized_item = item.replace(' ', '_')
+            return URIRef(f"{namespace}/{key}/{normalized_item}")
 
     def insert_rdfa_to_graph(self, article_url, rdfa):
         if 'author' in rdfa:
             author_name = rdfa['author']
-            self.add_entity_to_graph(article_url, author_name)
+            self.add_entity_to_graph(URIRef(article_url), author_name)
         if 'publisher' in rdfa:
             publisher_name = rdfa['publisher']
-            self.add_entity_to_graph(article_url, publisher_name, is_organization=True, entity_type='publisher')
+            self.add_entity_to_graph(URIRef(article_url), publisher_name, is_organization=True, entity_type='publisher')
 
     def add_content_length_to_graph(self, article_url):
         article_data = self.scraper.extract_data(article_url)
@@ -312,18 +248,29 @@ class GraphBuilder:
         )
 
     def add_inLanguage_to_graph(self, article_url):
+        """
+        Adds the language information of an article to the graph.
+
+        Args:
+            article_url (str): The URL of the article.
+
+        Returns:
+            None
+        """
+        # Extract language code from the article's metadata
         article_data = self.scraper.extract_data(article_url)
         language_code = article_data.get("language")
+
         if not language_code:
             return
-        try:
-            language_full_name = Language.get(language_code.lower()).display_name()
-        except Exception as e:
-            language_full_name = "Unknown Language"
 
-        if language_full_name == "Unknown Language":
-            language_full_name = language_code.upper()  # Fallback to code as full name (e.g., EN)
+
+        language_full_name = Language.get(language_code.lower()).display_name()
+        if "Unknown language" in language_full_name:
+            language_full_name = language_code.upper()
+
+        print(f"Detected language: {language_full_name}")
+        print(f"Detected language code: {language_code}")
         self.graph.add(
             (URIRef(article_url), URIRef("http://schema.org/inLanguage"), Literal(language_full_name))
         )
-

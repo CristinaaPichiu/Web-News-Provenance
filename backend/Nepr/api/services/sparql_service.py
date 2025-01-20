@@ -9,23 +9,46 @@ load_dotenv()
 class SPARQLService:
     def __init__(self):
         self.fuseki_url = os.getenv("FUSEKI_URL")
-        self.graph_builder = GraphBuilder()
 
-    def insert_graph(self, url):
+    def create_graph(self,url):
+        """
+        Creates an RDF graph using GraphBuilder.
+        """
+        graph_builder = GraphBuilder(url)
+        graph_builder.insert_json_ld_to_graph(url, graph_builder.json_ld_data)
+        graph_builder.add_content_length_to_graph(url)
+        graph_builder.add_inLanguage_to_graph(url)
+        rdf_graph = graph_builder.graph
+        graph_turtle = rdf_graph.serialize(format="turtle")
+        graph_json = rdf_graph.serialize(format="json-ld")
+        return graph_turtle, graph_json
+
+    def insert_graph(self, graph_data):
+        """
+        Inserts an RDF graph into the Fuseki dataset.
+        """
+        sparql_endpoint = f"{self.fuseki_url}/NEPR-2024/data"
+        headers = {'Content-Type': 'text/turtle'}
+
+        try:
+            response = requests.post(sparql_endpoint, data=graph_data, headers=headers)
+            if response.status_code == 200:
+                print("RDF Graph uploaded successfully!")
+            else:
+                print(f"Failed to upload RDF Graph. Status code: {response.status_code}")
+                print("Error message:", response.text)
+        except requests.exceptions.RequestException as e:
+            print(f"Error connecting to SPARQL endpoint: {e}")
+
+    def create_and_insert_graph(self, url):
         """
         Builds an RDF graph for the given URL using GraphBuilder and inserts it into the Fuseki dataset.
         """
-        metadata = self.graph_builder.extract_metadata(url)
-        self.graph_builder.insert_json_ld_to_graph(url, self.graph_builder.json_ld_data)
-        # author_name = self.graph_builder.extract_author()
-        # if author_name:
-        #     self.graph_builder.add_entity_to_graph(url, author_name, entity_type='author')
-        # publisher_name = self.graph_builder.extract_publisher()
-        # if publisher_name:
-        #     self.graph_builder.add_entity_to_graph(url, publisher_name, is_organization=True, entity_type='publisher')
-        # self.graph_builder.add_content_length_to_graph(url)
-        # self.graph_builder.add_inLanguage_to_graph(url)
-        rdf_graph = self.graph_builder.graph
+        graph_builder = GraphBuilder(url)
+        graph_builder.insert_json_ld_to_graph(url, graph_builder.json_ld_data)
+        graph_builder.add_content_length_to_graph(url)
+        graph_builder.add_inLanguage_to_graph(url)
+        rdf_graph = graph_builder.graph
 
         sparql_endpoint = f"{self.fuseki_url}/NEPR-2024/data"
         headers = {'Content-Type': 'text/turtle'}
@@ -43,4 +66,9 @@ class SPARQLService:
 
 # Example usage
 # service = SPARQLService()
-# service.insert_graph("https://www.bbc.com/news/articles/cgk18pdnxmmo")
+# service.create_and_insert_graph("https://english.elpais.com/technology/2025-01-20/tiktok-the-company-that-changed-internet-culture.html")
+# graph_data = service.create_graph("https://www.bbc.com/news/articles/c8r5g5dezk4o")
+# service.insert_graph(graph_data)
+#service.insert_graph("https://english.elpais.com/usa/2025-01-20/the-world-in-trumps-new-era-expansionism-tariffs-greater-focus-on-the-americas-and-a-staredown-with-beijing.html")
+#service.insert_graph("https://www.bbc.com/future/article/20250117-planetary-parade-what-the-alignment-of-seven-planets-really-means-for-science")
+#service.insert_graph("https://www.digi24.ro/stiri/actualitate/romania-si-ungaria-vor-construi-patru-noi-puncte-de-trecere-a-granitei-dupa-intrarea-in-schengen-unde-vor-fi-amplasate-3088497")
