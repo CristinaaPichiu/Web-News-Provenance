@@ -15,6 +15,7 @@ class GraphBuilder:
         self.rdfa_data = []
         self.scraper = BeautifulSoupScraper()
         self.json_ld_data = self.scraper.extract_json_ld(url)
+        self.rdfa_data = self.scraper.extract_rdfa(url)
 
     def add_entity_to_graph(self, entity_uri, entity_data, is_organization=False, entity_type='author'):
         """
@@ -33,11 +34,13 @@ class GraphBuilder:
         elif isinstance(entity_data, dict):
             # If it's a dictionary (additional details), only add the details
             # In this case, we assume the entity's name has already been added
+            name = entity_data.get('name')
             print(f"Adding additional details for {entity_type}: {entity_data}")
+
             if is_organization:
-                self.add_organization_details(entity_uri, entity_data['name'])
+                self.add_organization_details(entity_uri, name)
             else:
-                self.add_additional_person_details(entity_uri, entity_data['name'])
+                self.add_additional_person_details(entity_uri, name)
 
     def add_additional_person_details(self, entity_uri, entity_name):
         wikidata_data = self.get_wikidata_data(entity_name)
@@ -175,10 +178,6 @@ class GraphBuilder:
             print(f"Request failed: {e}")
             return None
 
-    def insert_metadata_to_graph(self, article_url, metadata):
-        for json_ld in metadata:
-            self.insert_json_ld_to_graph(article_url, json_ld)
-
     def insert_json_ld_to_graph(self, article_url, json_ld):
         if json_ld is None:
             return None
@@ -197,16 +196,13 @@ class GraphBuilder:
                         url_uri = URIRef(item)
                         self.graph.add((URIRef(article_url), predicate_uri, url_uri))
                     else:
+                        if predicate_uri in ['<http://schema.org/cssSelector>', '<http://schema.org/height>']:
+                            continue
                         self.graph.add((URIRef(article_url), predicate_uri, Literal(item)))
 
             elif isinstance(value, dict):
-                if key == "image" and "@type" in value and value["@type"] == "ImageObject":
-
-                    if "url" in value:
-                        # If the 'url' field is a list of URLs, process each one
-                        for url in value["url"]:
-                            node_uri = self.generate_entity_uri_item(namespace, key, url)
-                            self.graph.add((URIRef(node_uri), predicate_uri, URIRef(url)))
+                if key in ['image', 'thumbnailUrl', 'cssSelector', 'height', 'width', 'logo']:
+                    continue
                 else:
                     node_uri = self.generate_entity_uri_item(namespace, key, value)
                     self.graph.add((URIRef(article_url), predicate_uri, node_uri))
@@ -215,6 +211,8 @@ class GraphBuilder:
                     # Recursively add the dictionary as a node
                     self.insert_json_ld_to_graph(node_uri, value)
             else:
+                if predicate_uri in ['<http://schema.org/cssSelector>', '<http://schema.org/height>']:
+                    continue
                 self.graph.add((URIRef(article_url), predicate_uri, Literal(value)))
 
     @staticmethod
@@ -231,13 +229,57 @@ class GraphBuilder:
             normalized_item = item.replace(' ', '_')
             return URIRef(f"{namespace}/{key}/{normalized_item}")
 
-    def insert_rdfa_to_graph(self, article_url, rdfa):
-        if 'author' in rdfa:
-            author_name = rdfa['author']
-            self.add_entity_to_graph(URIRef(article_url), author_name)
-        if 'publisher' in rdfa:
-            publisher_name = rdfa['publisher']
-            self.add_entity_to_graph(URIRef(article_url), publisher_name, is_organization=True, entity_type='publisher')
+    def insert_rdfa_to_graph(self, article_url, cleaned_data):
+        """
+        Inserts cleaned RDFa data into the RDF graph, ensuring no duplicate triples are added.
+
+        Args:
+            article_url (str): The URL of the article.
+            cleaned_data (dict): Cleaned RDFa data with relevant fields for schema.org Article.
+        """
+        # List of schema.org fields for the Article
+        schema_fields = {
+            "headline": "http://schema.org/headline",
+            "description": "http://schema.org/description",
+            "image": "http://schema.org/image",
+            "imageAlt": "http://schema.org/image",
+            "url": "http://schema.org/url",
+            "publisher": "http://schema.org/publisher",
+            "articleType": "http://schema.org/articleType",
+            "dateModified": "http://schema.org/dateModified",
+            "datePublished": "http://schema.org/datePublished",
+            "author": "http://schema.org/author",
+        }
+
+        # Iterate through the cleaned data to populate the graph
+        for key, value in cleaned_data.items():
+            if key in schema_fields:
+                # Get the schema.org URI for the field
+                predicate_uri = URIRef(schema_fields[key])
+
+                # Check if the value is a string and handle it
+                if isinstance(value, str):
+                    # Check if the triple already exists
+                    if (URIRef(article_url), predicate_uri, Literal(value)) not in self.graph:
+                        self.graph.add((URIRef(article_url), predicate_uri, Literal(value)))
+
+                # Handle lists of strings (e.g., authors or other multi-value fields)
+                elif isinstance(value, list) and len(value) > 0 and isinstance(value[0], str):
+                    for item in value:
+                        if (URIRef(article_url), predicate_uri, Literal(item)) not in self.graph:
+                            self.graph.add((URIRef(article_url), predicate_uri, Literal(item)))
+
+                # Check if the key is 'author' or 'publisher' and treat them as entities
+                elif key == 'author' or key == 'publisher':
+                    # Create a node URI for the entity (author or publisher)
+                    node_uri = self.generate_entity_uri_item(article_url, key, value)
+
+                    # Add the entity to the graph, if it's not already there
+                    if (URIRef(article_url), predicate_uri, node_uri) not in self.graph:
+                        self.graph.add((URIRef(article_url), predicate_uri, node_uri))
+
+                    # Add the entity itself to the graph if it's not there yet
+                    self.add_entity_to_graph(node_uri, value, is_organization=(key == 'publisher'), entity_type=key)
 
     def add_content_length_to_graph(self, article_url):
         article_data = self.scraper.extract_data(article_url)
@@ -259,18 +301,33 @@ class GraphBuilder:
         """
         # Extract language code from the article's metadata
         article_data = self.scraper.extract_data(article_url)
-        language_code = article_data.get("language")
-
-        if not language_code:
+        language_code = article_data.get("language_code")
+        language_name = article_data.get("language_name")
+        if not language_code or language_name == "Unknown language":
             return
 
-
-        language_full_name = Language.get(language_code.lower()).display_name()
-        if "Unknown language" in language_full_name:
-            language_full_name = language_code.upper()
-
-        print(f"Detected language: {language_full_name}")
+        print(f"Detected language: {language_name}")
         print(f"Detected language code: {language_code}")
         self.graph.add(
-            (URIRef(article_url), URIRef("http://schema.org/inLanguage"), Literal(language_full_name))
+            (URIRef(article_url), URIRef("http://schema.org/inLanguage"), Literal(language_name))
         )
+
+    def add_keywords_to_graph(self, article_url):
+        """
+        Adds the keywords of an article to the graph.
+
+        Args:
+            article_url (str): The URL of the article.
+
+        Returns:
+            None
+        """
+        article_data = self.scraper.extract_data(article_url)
+        keywords = article_data.get("keywords")
+        if not keywords:
+            return
+
+        for keyword in keywords:
+            self.graph.add(
+                (URIRef(article_url), URIRef("http://schema.org/keywords"), Literal(keyword))
+            )

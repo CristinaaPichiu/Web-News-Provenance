@@ -6,18 +6,23 @@ from models.graph_builder import GraphBuilder
 
 load_dotenv()
 
+
 class SPARQLService:
     def __init__(self):
         self.fuseki_url = os.getenv("FUSEKI_URL")
 
-    def create_graph(self,url):
+    def create_graph(self, url):
         """
         Creates an RDF graph using GraphBuilder.
         """
         graph_builder = GraphBuilder(url)
-        graph_builder.insert_json_ld_to_graph(url, graph_builder.json_ld_data)
+        if graph_builder.json_ld_data is not None:
+            graph_builder.insert_json_ld_to_graph(url, graph_builder.json_ld_data)
+        if graph_builder.rdfa_data is not None:
+            graph_builder.insert_rdfa_to_graph(url, graph_builder.rdfa_data)
         graph_builder.add_content_length_to_graph(url)
         graph_builder.add_inLanguage_to_graph(url)
+        graph_builder.add_keywords_to_graph(url)
         rdf_graph = graph_builder.graph
         graph_turtle = rdf_graph.serialize(format="turtle")
         graph_json = rdf_graph.serialize(format="json-ld")
@@ -45,7 +50,11 @@ class SPARQLService:
         Builds an RDF graph for the given URL using GraphBuilder and inserts it into the Fuseki dataset.
         """
         graph_builder = GraphBuilder(url)
-        graph_builder.insert_json_ld_to_graph(url, graph_builder.json_ld_data)
+        if graph_builder.json_ld_data is not None:
+            graph_builder.insert_json_ld_to_graph(url, graph_builder.json_ld_data)
+        if graph_builder.rdfa_data is not None:
+            graph_builder.insert_rdfa_to_graph(url, graph_builder.rdfa_data)
+        graph_builder.add_keywords_to_graph(url)
         graph_builder.add_content_length_to_graph(url)
         graph_builder.add_inLanguage_to_graph(url)
         rdf_graph = graph_builder.graph
@@ -64,11 +73,11 @@ class SPARQLService:
         except requests.exceptions.RequestException as e:
             print(f"Error connecting to SPARQL endpoint: {e}")
 
+
 # Example usage
-# service = SPARQLService()
-# service.create_and_insert_graph("https://english.elpais.com/technology/2025-01-20/tiktok-the-company-that-changed-internet-culture.html")
-# graph_data = service.create_graph("https://www.bbc.com/news/articles/c8r5g5dezk4o")
-# service.insert_graph(graph_data)
-#service.insert_graph("https://english.elpais.com/usa/2025-01-20/the-world-in-trumps-new-era-expansionism-tariffs-greater-focus-on-the-americas-and-a-staredown-with-beijing.html")
-#service.insert_graph("https://www.bbc.com/future/article/20250117-planetary-parade-what-the-alignment-of-seven-planets-really-means-for-science")
-#service.insert_graph("https://www.digi24.ro/stiri/actualitate/romania-si-ungaria-vor-construi-patru-noi-puncte-de-trecere-a-granitei-dupa-intrarea-in-schengen-unde-vor-fi-amplasate-3088497")
+service = SPARQLService()
+service.create_and_insert_graph("https://www.huffingtonpost.fr/politique/article/un-salut-nazi-fait-par-elon-musk-le-rn-y-voit-tout-autre-chose_245117.html")
+# # # service.insert_graph(graph_data)
+# # # service.insert_graph("https://english.elpais.com/usa/2025-01-20/the-world-in-trumps-new-era-expansionism-tariffs-greater-focus-on-the-americas-and-a-staredown-with-beijing.html")
+# # # service.insert_graph("https://www.bbc.com/future/article/20250117-planetary-parade-what-the-alignment-of-seven-planets-really-means-for-science")
+# # # service.insert_graph("")

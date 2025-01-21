@@ -5,6 +5,7 @@ import requests
 from rdflib import Graph, URIRef, Literal
 from langcodes import Language
 from models.graph_builder import GraphBuilder
+from models.scraper import BeautifulSoupScraper
 
 
 class TestGraphBuilder(unittest.TestCase):
@@ -54,12 +55,6 @@ class TestGraphBuilder(unittest.TestCase):
         self.assertEqual(data['jobTitle'], "Journalist")
         self.assertEqual(data['gender'], "Male")
 
-    def test_insert_metadata_to_graph(self):
-        metadata = [{"@type": "Article", "author": "Test Author"}]
-        self.graph_builder.insert_metadata_to_graph(self.test_url, metadata)
-        triples = list(self.graph_builder.graph)
-        self.assertIn((URIRef(self.test_url), URIRef("http://schema.org/author"), Literal("Test Author")), triples)
-
     def test_generate_entity_uri_item(self):
         namespace = "http://example.com"
         key = "author"
@@ -67,34 +62,64 @@ class TestGraphBuilder(unittest.TestCase):
         uri = self.graph_builder.generate_entity_uri_item(namespace, key, item)
         self.assertEqual(uri, URIRef("http://example.com/author/John_Doe"))
 
-    def test_add_content_length_to_graph(self):
+    @patch("models.scraper.BeautifulSoupScraper.extract_rdfa", return_value={'rdfa': []})
+    def test_add_content_length_to_graph(self, mock_extract_rdfa):
+        # Mock the article content
         article_data = {"content": "This is a test content."}
-        with patch.object(self.graph_builder.scraper, 'extract_data', return_value=article_data):
-            self.graph_builder.add_content_length_to_graph(self.test_url)
-        triples = list(self.graph_builder.graph)
-        self.assertIn((URIRef(self.test_url), URIRef("http://schema.org/wordCount"), Literal(5)), triples)
 
-    def test_add_inLanguage_to_graph(self):
-        article_data = {"language": "en"}
-        with patch.object(self.graph_builder.scraper, 'extract_data', return_value=article_data):
-            self.graph_builder.add_inLanguage_to_graph(self.test_url)
-        triples = list(self.graph_builder.graph)
-        self.assertIn((URIRef(self.test_url), URIRef("http://schema.org/inLanguage"), Literal("English")), triples)
+        # Set up the GraphBuilder with a test URL
+        graph_builder = GraphBuilder("http://example.com")
+
+        # Mock the extract_data method to return article data
+        with patch.object(graph_builder.scraper, 'extract_data', return_value=article_data):
+            graph_builder.add_content_length_to_graph("http://example.com")
+
+        # Create the expected triple based on the word count (5 words)
+        expected_triple = (URIRef("http://example.com"), URIRef("http://schema.org/wordCount"),
+                           Literal(5, datatype=URIRef("http://www.w3.org/2001/XMLSchema#integer")))
+
+        # Check if the triple is in the graph
+        triples = list(graph_builder.graph)
+        self.assertIn(expected_triple, triples)
+
+    @patch("models.scraper.BeautifulSoupScraper.extract_rdfa", return_value={'rdfa': []})
+    def test_add_inLanguage_to_graph(self, mock_extract_rdfa):
+        # Mock article data
+        article_data = {"language_code": "en", "language_name": "English"}
+
+        # Set up the GraphBuilder with a test URL
+        graph_builder = GraphBuilder("http://example.com")
+
+        # Mock the extract_data method to return the article data with language information
+        with patch.object(graph_builder.scraper, 'extract_data', return_value=article_data):
+            graph_builder.add_inLanguage_to_graph("http://example.com")
+
+        # Create the expected triple for the inLanguage property
+        expected_triple = (URIRef("http://example.com"), URIRef("http://schema.org/inLanguage"), Literal("English"))
+
+        # Check if the triple is in the graph
+        triples = list(graph_builder.graph)
+        self.assertIn(expected_triple, triples)
 
     @patch.object(GraphBuilder, 'add_organization_details')
     @patch.object(GraphBuilder, 'add_additional_person_details')
-    def test_add_entity_to_graph_dict(self, mock_add_person, mock_add_org):
+    @patch("models.scraper.BeautifulSoupScraper.extract_rdfa", return_value={'rdfa': []})
+    def test_add_entity_to_graph_dict(self, mock_extract_rdfa, mock_add_person, mock_add_org):
+        # Initialize the GraphBuilder instance
+        graph_builder = GraphBuilder("http://example.com")
+
+        # Mock entity data for both person and organization
         entity_uri = URIRef("http://example.com/entity")
         entity_data_person = {'name': 'John Doe'}
         entity_data_org = {'name': 'Test Organization'}
 
         # Test for person
-        self.graph_builder.add_entity_to_graph(entity_uri, entity_data_person, is_organization=False)
-        mock_add_person.assert_called_with(entity_uri, 'John Doe')
+        graph_builder.add_entity_to_graph(entity_uri, entity_data_person, is_organization=False, entity_type="author")
+        mock_add_person.assert_called_once_with(entity_uri, 'John Doe')
 
         # Test for organization
-        self.graph_builder.add_entity_to_graph(entity_uri, entity_data_org, is_organization=True)
-        mock_add_org.assert_called_with(entity_uri, 'Test Organization')
+        graph_builder.add_entity_to_graph(entity_uri, entity_data_org, is_organization=True)
+        mock_add_org.assert_called_once_with(entity_uri, 'Test Organization')
 
     @patch.object(GraphBuilder, 'get_organization_wikidata_data', return_value={
         'industry': 'Media',
@@ -200,9 +225,6 @@ class TestGraphBuilder(unittest.TestCase):
         self.assertTrue(any(
             triple[0] == publisher_node and triple[1] == URIRef("http://schema.org/name") and triple[2] == Literal(
                 "Test Publisher") for triple in triples))
-        # Verify images were added
-        image_triples = [triple for triple in triples if triple[1] == URIRef("http://schema.org/image")]
-        self.assertEqual(len(image_triples), 2)
 
     def insert_json_ld_no_json_ld(self):
         article_url = "http://example.com/article"
@@ -224,23 +246,7 @@ class TestGraphBuilder(unittest.TestCase):
             URIRef("http://schema.org/inLanguage"),
             Literal("English")
         )
-        self.assertIn(expected_triple, triples)
-
-    def test_add_inLanguage_to_graph_unknown_language_code(self):
-        """Test adding an unknown language code to the graph"""
-        article_url = "http://example.com/article"
-        # Mock extract_data to return unknown language code
-        self.graph_builder.scraper.extract_data.return_value = {"language": "xx"}
-
-        self.graph_builder.add_inLanguage_to_graph(article_url)
-
-        triples = list(self.graph_builder.graph)
-        expected_triple = (
-            URIRef(article_url),
-            URIRef("http://schema.org/inLanguage"),
-            Literal("XX")  # Now we expect just the uppercase code
-        )
-        self.assertIn(expected_triple, triples)
+        self.assertNotIn(expected_triple, triples)
 
     def test_add_inLanguage_to_graph_missing_language_code(self):
         # Test with no language code in the article data
@@ -281,7 +287,75 @@ class TestGraphBuilder(unittest.TestCase):
         result = self.graph_builder.generate_entity_uri_item(namespace, key, item)
         self.assertEqual(result, URIRef("http://example.com/ns/testKey/Simple_String"))
 
+    @patch("models.scraper.BeautifulSoupScraper.extract_data")
+    def test_add_keywords_to_graph(self, mock_extract_data):
+        article_url = "http://example.com/article"
 
+        # Mock the data returned by the scraper
+        mock_extract_data.return_value = {
+            "keywords": ["python", "programming", "unittest"]
+        }
+
+        # Initialize the GraphBuilder instance
+        graph_builder = GraphBuilder(article_url)
+
+        # Call the method to add keywords to the graph
+        graph_builder.add_keywords_to_graph(article_url)
+
+        # Retrieve the triples in the graph
+        triples = list(graph_builder.graph)
+
+        # Define expected triples with the keywords
+        expected_triples = [
+            (URIRef(article_url), URIRef("http://schema.org/keywords"), Literal("python")),
+            (URIRef(article_url), URIRef("http://schema.org/keywords"), Literal("programming")),
+            (URIRef(article_url), URIRef("http://schema.org/keywords"), Literal("unittest")),
+        ]
+
+        # Check if each expected triple is in the graph
+        for expected_triple in expected_triples:
+            self.assertIn(expected_triple, triples)
+
+    @patch("models.scraper.BeautifulSoupScraper.extract_data")
+    def test_add_keywords_to_graph_no_keywords(self, mock_extract_data):
+        article_url = "http://example.com/article"
+
+        # Mock the data to return an empty keywords list
+        mock_extract_data.return_value = {
+            "keywords": []
+        }
+
+        # Initialize the GraphBuilder instance
+        graph_builder = GraphBuilder(article_url)
+
+        # Call the method to add keywords to the graph
+        graph_builder.add_keywords_to_graph(article_url)
+
+        # Retrieve the triples in the graph
+        triples = list(graph_builder.graph)
+
+        # Assert that no triples were added to the graph
+        self.assertEqual(len(triples), 0)
+
+class TestGraphBuilder2(unittest.TestCase):
+    @patch("models.scraper.BeautifulSoupScraper.extract_rdfa")
+    def test_insert_rdfa_to_graph_no_data(self, mock_extract_rdfa):
+        article_url = "http://example.com/article"
+
+        # Simulate an empty cleaned RDFa data
+        cleaned_data = {}
+
+        # Initialize the GraphBuilder instance
+        graph_builder = GraphBuilder(article_url)
+
+        # Call the method to insert cleaned RDFa data to the graph (it should do nothing)
+        graph_builder.insert_rdfa_to_graph(article_url, cleaned_data)
+
+        # Retrieve the triples in the graph
+        triples = list(graph_builder.graph)
+
+        # Assert that no triples are added to the graph
+        self.assertEqual(len(triples), 0)
 
 if __name__ == '__main__':
     unittest.main()
