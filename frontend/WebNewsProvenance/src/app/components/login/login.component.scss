@@ -1,8 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@600&display=swap');
 $overlay-z-index: 10;
 $container-padding: 20px;
 $border-radius: 8px;
 
 .container {
+  font-family: 'Open Sans', sans-serif; 
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -14,7 +16,7 @@ $border-radius: 8px;
 .image-container {
   flex: 1;
   max-width: 50%;
-  margin-left: 100px; 
+  margin-left: 120px; 
   margin-top: 50px;
 
   img {
@@ -66,7 +68,7 @@ $border-radius: 8px;
     margin-top: 15px;
     padding: 0.5em 1em;
     font-size: 0.875em;
-    background-color: #C19A6B;
+    background-color: #A3D1DE;
     color: white;
     border: none;
   }
@@ -95,7 +97,7 @@ $border-radius: 8px;
   padding-left: $container-padding;
 }
 .welcome-text {
-  font-family: 'Rubik', sans-serif;
+  font-family: 'Open Sans', sans-serif; 
   font-size: 25px;
   font-weight: 100; 
   color: #787D7D; 
