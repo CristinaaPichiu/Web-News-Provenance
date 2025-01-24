@@ -2,7 +2,6 @@ import demjson3
 from playwright.sync_api import sync_playwright
 import json
 from goose3 import Goose
-import extruct
 import langcodes
 import requests
 from bs4 import BeautifulSoup
@@ -12,11 +11,17 @@ from langdetect import DetectorFactory, detect_langs
 import spacy
 from newspaper import Article
 import pythonmonkey
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 
 class BeautifulSoupScraper:
     """A scraper class using BeautifulSoup to extract data from web pages."""
 
-    def __init__(self):
+    def __init__(self,service,options):
         logging.basicConfig(level=logging.INFO)
         DetectorFactory.seed = 0
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
@@ -25,6 +30,8 @@ class BeautifulSoupScraper:
         self.nlp = spacy.load("en_core_web_sm")
         self.driver = None
         self.soup = None
+        self.service = service
+        self.options = options
 
     def extract_json_ld(self, url):
         """
@@ -34,17 +41,28 @@ class BeautifulSoupScraper:
         Returns:
             dict: A dictionary containing all extracted metadata.
         """
-        try:
 
-            response = requests.get(url, timeout=10)
-            soup = BeautifulSoup(response.content, 'html.parser')
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive'
+            }
+            response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
             html_content = response.text
             self.soup = soup
             json_ld_data = self.extract_main_article_json_ld(soup, html_content, url)
             return json_ld_data
+
+        except requests.exceptions.Timeout:
+            logging.error(f"Request timed out while trying to fetch the URL: {url}")
+            return None
+
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching URL: {e}")
+            logging.error(f"Error fetching URL: {e}")
             return None
 
     def extract_rdfa(self, url):
@@ -56,58 +74,25 @@ class BeautifulSoupScraper:
             dict: A dictionary containing all extracted RDFa metadata without application details.
         """
         try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            html_content = response.text
-            rdfa_extracted = extruct.extract(html_content, syntaxes=['rdfa'])
-            print(f"Extracted RDFa data: {rdfa_extracted}")
-
-            rdfa_data_extracted = rdfa_extracted.get('rdfa', [])
+            g = Goose()
+            article_goose = g.extract(url=url)
+            logging.info(f"Goose article: {article_goose.opengraph}")
+            rdfa_data_extracted = article_goose.opengraph
+            if 'title' in rdfa_data_extracted:
+                rdfa_data_extracted['headline'] = rdfa_data_extracted.pop('title')
+            if 'rich_attachment' in rdfa_data_extracted:
+                del rdfa_data_extracted['rich_attachment']
             if rdfa_data_extracted:
-                return rdfa_data_extracted[0]
+                return rdfa_data_extracted
             else:
                 return None
 
         except requests.exceptions.RequestException as e:
-            print(f"Request failed: {e}")
+            logging.error(f"Request failed- Rdfa: {e}")
             return None
         except Exception as e:
-            print(f"Error extracting RDFa: {e}")
+            logging.error(f"Error extracting RDFa: {e}")
             return None
-    @staticmethod
-    def clean_rdfa_for_schema(rdfa_data_extracted):
-        """
-        Clean up the RDFa data and prepare it for schema.org Article schema.
-        Args:
-            rdfa_data_extracted (list): The list containing extracted RDFa data.
-        Returns:
-            dict: Cleaned-up dictionary with necessary fields for schema.org Article schema.
-        """
-        cleaned_data = {}
-        if rdfa_data_extracted:
-            for key, value in rdfa_data_extracted.items():
-                # Extract relevant information for schema.org Article
-                if key == 'http://ogp.me/ns#title':
-                    cleaned_data["headline"] = value[0].get('@value', '')
-                elif key == 'http://ogp.me/ns#description':
-                    cleaned_data["description"] = value[0].get('@value', '')
-                elif key == 'http://ogp.me/ns#image':
-                    cleaned_data["image"] = value[0].get('@value', '')
-                elif key == 'http://ogp.me/ns#image:alt':
-                    cleaned_data["imageAlt"] = value[0].get('@value', '')
-                elif key == 'al:web:url':
-                    cleaned_data["url"] = value[0].get('@value', '')
-                elif key == 'http://ogp.me/ns#site_name':
-                    cleaned_data["publisher"] = value[0].get('@value', '')
-                elif key == 'http://ogp.me/ns#type':
-                    cleaned_data["articleType"] = value[0].get('@value', '')
-                elif key == 'http://ogp.me/ns#updated_time':
-                    cleaned_data["dateModified"] = value[0].get('@value', '')
-                elif key == 'http://ogp.me/ns#published_time':
-                    cleaned_data["datePublished"] = value[0].get('@value', '')
-                elif key == 'http://ogp.me/ns#author':
-                    cleaned_data["author"] = value[0].get('@value', '')
-        return cleaned_data
 
     def _get_html_content(self, url):
         """Fetches the HTML content of a page with retry mechanism."""
@@ -130,31 +115,41 @@ class BeautifulSoupScraper:
             article.nlp()
             return article
         except Exception as e:
-            print(f"Error parsing article: {e}")
+            logging.error(f"Error parsing article: {e}")
             return None
 
     def extract_data(self, url):
-        """Extracts data from a webpage."""
+        """Extracts data from a webpage.
+        Args: url (str): The URL of the webpage to extract data from.
+        Returns: dict: A dictionary containing the extracted data.
+            """
+
         response = self._get_html_content(url)
         soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Goose for article extraction
         g = Goose()
         article_goose = g.extract(url=url)
-
-        # Newspaper for article parsing
         article = Article(url)
         article = self._parse_article(article)
-
         content = article_goose.cleaned_text
-        language_code, language_name = self.detect_language(response, soup, content)
-        keywords = article.keywords if article else None
+        headline = article_goose.title
+        logging.info(f"Goose content: {content}")
+        language_code, language_name = self.detect_language(response, soup, headline)
+        keywords = []
+        if article:
+            keywords = article.keywords
+            logging.info(f"Keywords: {article.keywords}")
+        logging.info(f"Goose keywords: {article_goose.meta_keywords}")
+        if article_goose.meta_keywords:
+            goose_keywords = article_goose.meta_keywords.split(',')
+            keywords = list(set(keywords + goose_keywords))
 
         return {
             "content": content,
             "language_code": language_code,
             "language_name": language_name,
-            "keywords": keywords
+            "keywords": keywords,
+            "videos": article_goose.movies,
+            "abstract": article_goose.meta_description
         }
 
     def detect_language(self, response, soup, content):
@@ -167,14 +162,12 @@ class BeautifulSoupScraper:
         Returns:
             tuple: A tuple containing the language code and the full language name.
         """
-        # Check the `Content-Language` header
         content_language = response.headers.get('Content-Language')
         if content_language:
             lang_code = content_language.split(',')[0]
             full_name = self.get_full_language_name(lang_code)
             return lang_code, full_name
 
-        # Check the `lang` attribute in the HTML `<html>` tag
         html_lang = soup.html.get('lang') if soup.html else None
         if html_lang:
             lang_code = html_lang.split('-')[0]
@@ -212,7 +205,6 @@ class BeautifulSoupScraper:
         if not language_code:
             return None, "Unknown language"
         language_code = language_code[0].lang
-        print(f"Detected language: {language_code}")
         language_name = langcodes.Language.get(language_code).language_name()
         return language_code, language_name
 
@@ -224,27 +216,27 @@ class BeautifulSoupScraper:
         Returns:
             list: A list of JSON-LD scripts or None if none are found.
         """
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            page.goto(url)
-            page.wait_for_load_state('domcontentloaded')
-            json_ld_scripts = page.query_selector_all('script[type="application/ld+json"]')
-            json_ld_data = []
-            for script in json_ld_scripts:
-                script_content = script.inner_text()
-                try:
-                    json_data = json.loads(script_content)
-                    json_ld_data.append(json_data)
-                except json.JSONDecodeError:
-                    print(f"Error decoding JSON from script: {script_content}")
 
-            browser.close()
-            if not json_ld_data:
-                print("No JSON-LD scripts found.")
-                return None
+        driver = webdriver.Chrome(service=self.service, options=self.options)
+        driver.get(url)
 
-            return json_ld_data
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'player-microformat-renderer')))
+        json_ld_scripts = driver.find_elements(By.XPATH, '//script[@type="application/ld+json"]')
+        json_ld_data = []
+        for script in json_ld_scripts:
+            script_content = script.get_attribute('innerHTML')
+            try:
+                json_data = json.loads(script_content)
+                json_ld_data.append(json_data)
+            except json.JSONDecodeError:
+                logging.error(f"Error decoding JSON from script: {script_content}")
+
+        driver.quit()
+        if not json_ld_data:
+            logging.info("No JSON-LD scripts found.")
+            return None
+
+        return json_ld_data
 
     def extract_main_article_json_ld(self, soup, html_content, page_url):
         """
@@ -268,64 +260,79 @@ class BeautifulSoupScraper:
         def extract_matching_item(json_data, valid_types, page_url):
             """
             Inspect JSON-LD data for matches based on type and mainEntityOfPage.
-            Returns the first matching item or None.
+            Args:
+                json_data (dict): The JSON-LD data to inspect.
+                valid_types (set): A set of valid types to match against.
+                page_url (str): The URL of the webpage.
+            Returns:
+                dict: The matching JSON-LD data or None if no match is found.
             """
+            logging.info(f"Inspecting JSON-LD data: {json_data}")
             if isinstance(json_data, dict):
                 item_type = json_data.get('@type')
                 if is_valid_type(item_type, valid_types):
-                    if json_data.get("mainEntityOfPage", {}).get("@id") == page_url:
-                        print(f"Exact match found: {json_data}")
-                        return json_data
-                    return json_data  # Add to potential matches
+                    main_entity = json_data.get("mainEntityOfPage")
+                    logging.info(f"Item type: {item_type}, mainEntityOfPage: {main_entity}")
+
+                    if isinstance(main_entity, str):
+                        if main_entity == page_url:
+                            logging.info(f"Exact match found with string mainEntityOfPage: {json_data}")
+                            return json_data
+                    elif isinstance(main_entity, dict):
+                        if main_entity.get("@id") == page_url:
+                            logging.info(f"Exact match found with dict mainEntityOfPage: {json_data}")
+                            return json_data
+
+                    return json_data
             elif isinstance(json_data, list):
                 for item in json_data:
                     result = extract_matching_item(item, valid_types, page_url)
                     if result:
                         return result
+            else:
+                logging.info(f"Unexpected JSON-LD format: {type(json_data)} - {json_data}")
             return None
 
-        # Step 1: Determine the source of JSON-LD data
         if 'youtube.com' in page_url:
             json_ld_scripts = self.extract_json_ld_youtube(page_url)
         else:
             json_ld_scripts = self.extract_json_ld_selenium(page_url)
 
         if not json_ld_scripts:
-            print("No JSON-LD scripts found.")
+            logging.info("No JSON-LD scripts found.")
             return None
 
-        # Step 2: Define valid types
         valid_types = {
             "NewsArticle", "Article", "BackgroundNewsArticle",
             "ReportageNewsArticle", "VideoObject", "BlogPosting",
             "PodcastEpisode"
         }
 
-        # Step 3: Process each JSON-LD script
         potential_matches = []
         for script in json_ld_scripts:
             try:
-                # Handle @graph if present
-                if '@graph' in script:
-                    print(f"Processing @graph data: {script['@graph']}")
+                logging.info(f"Processing script: {script}")
+                if isinstance(script, dict) and '@graph' in script:
+                    logging.info(f"Processing @graph data: {script['@graph']}")
                     for item in script['@graph']:
                         result = extract_matching_item(item, valid_types, page_url)
                         if result:
                             return result
-                else:
+                elif isinstance(script, dict):
                     result = extract_matching_item(script, valid_types, page_url)
                     if result:
                         return result
+                else:
+                    logging.info(f"Script is not a dictionary: {type(script)} - {script}")
             except Exception as e:
-                print(f"Error processing script: {e}")
+                logging.error(f"Error processing script: {e}")
                 continue
 
-        # Step 4: Fallback logic if no exact match is found
         if potential_matches:
-            print("Returning the first potential match.")
+            logging.info("Returning the first potential match.")
             return potential_matches[0]
 
-        print("No matching JSON-LD found.")
+        logging.info("No matching JSON-LD found.")
         return None
 
 
@@ -351,10 +358,9 @@ class BeautifulSoupScraper:
                 repaired = jsonrepair(malformed_json)
                 return repaired
             except demjson3.JSONDecodeError as e:
-                print(f"Failed to fix JSON: {e}")
+                logging.error(f"Failed to fix JSON: {e}")
                 return None
 
-        # Initialize Playwright and run in headless mode
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
@@ -367,11 +373,9 @@ class BeautifulSoupScraper:
                 try:
                     json_ld_content = script.inner_text()
                     try:
-                        # First, try parsing as-is
                         json_ld_data = json.loads(json_ld_content)
                     except json.JSONDecodeError:
-                        # If it fails, attempt to fix the JSON
-                        print(f"Attempting to fix malformed JSON:\n{json_ld_content[:100]}...")
+                        logging.info(f"Attempting to fix malformed JSON:\n{json_ld_content[:100]}...")
                         fixed_json = make_json_valid(json_ld_content)
                         if fixed_json:
                             json_ld_data = json.loads(fixed_json)
@@ -380,7 +384,7 @@ class BeautifulSoupScraper:
 
                     all_json_ld_data.append(json_ld_data)
                 except Exception as e:
-                    print(f"An error occurred while processing script: {e}")
+                    logging.error(f"An error occurred while processing script: {e}")
                     continue
 
             browser.close()

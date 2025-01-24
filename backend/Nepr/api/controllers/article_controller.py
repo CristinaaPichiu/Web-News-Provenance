@@ -1,0 +1,94 @@
+import logging
+
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from databases.db_postgresql_conn import connect
+from api.services.sparql_service import SPARQLService
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium import webdriver
+
+article_blueprint = Blueprint('article', __name__)
+service = Service(ChromeDriverManager().install())
+options = webdriver.ChromeOptions()
+options.add_argument('--headless')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
+sparql_service = SPARQLService(service, options)
+
+
+@article_blueprint.route('/create', methods=['POST'])
+def create_article():
+    url = request.json.get('url')
+    if not url:
+        return jsonify({"message": "URL is required"}), 400
+
+    success, message, graph_data = sparql_service.create_and_insert_graph(url)
+    if success:
+        return jsonify({
+            "message": message,
+            "data": graph_data,
+            "format": "application/json"
+        }), 201
+    logging.info(graph_data)
+    return jsonify({"message": "Failed", "error": message}), 500
+
+@article_blueprint.route('/search', methods=['GET'])
+def search_keywords():
+    keywords = request.args.get('keywords')
+    if not keywords:
+        return jsonify({"message": "Keywords are required"}), 400
+
+    results, match_type = sparql_service.search_articles_by_keywords(keywords)
+    if results:
+        serializable_results = [
+            {key: str(value) for key, value in article.items()}
+            for article in results
+        ]
+        return jsonify({"message": "Success", "data": serializable_results, "type": match_type}), 200
+    return jsonify({"message": "No articles found"}), 404
+
+@article_blueprint.route('/', methods=['GET'])
+def get_article_by_url():
+    """
+    Retrieves an article from the Fuseki dataset by its URL.
+    Args:
+        url: URL of the article to retrieve.
+    Returns:
+        Article data in JSON-LD format.
+    """
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"message": "URL is required"}), 400
+    result = sparql_service.get_article_by_url(url)
+    if result:
+        return jsonify({"message": "Success", "data": result}), 200
+
+@article_blueprint.route('/all', methods=['GET'])
+def get_all_articles():
+    """
+    Retrieves all articles from the Fuseki dataset.
+    Returns:
+        List of articles in JSON-LD format.
+    """
+    results = sparql_service.get_all_articles()
+    if results:
+        return jsonify({"message": "Success", "data": results}), 200
+    return jsonify({"message": "No articles found"}), 404
+
+@article_blueprint.route('/', methods=['DELETE'])
+def delete_article_by_url():
+    """
+    Deletes an article from the Fuseki dataset by its URL.
+    Args:
+        url: URL of the article to delete.
+    Returns:
+        Success message or error message.
+    """
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"message": "URL is required"}), 400
+    success, message = sparql_service.delete_article_by_url(url)
+    if success:
+        return jsonify({"message": message}), 200
+    return jsonify({"message": "Failed", "error": message}), 500
