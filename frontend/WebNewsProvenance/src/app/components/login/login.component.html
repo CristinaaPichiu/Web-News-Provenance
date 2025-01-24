@@ -1,0 +1,41 @@
+<div class="container">
+    <div class="overlay-container">
+        
+    </div>
+  
+    <div class="image-container">
+      <img src="/assets/loginn.png" alt="Descriere Imagine">
+    </div>
+  
+    <div class="login-container">
+      <h2>Login</h2>
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+        <mat-form-field appearance="outline" class="custom-mat-form-field">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" placeholder="Type your email" formControlName="email" class="custom-input">
+          <mat-icon matSuffix>email</mat-icon>
+          <mat-error *ngIf="loginForm.get('email')?.errors?.['required']">
+              Email is required.
+          </mat-error>
+          <mat-error *ngIf="loginForm.get('email')?.errors?.['email']">
+              Please enter a valid email address.
+          </mat-error>
+      </mat-form-field>
+      
+       
+       
+  
+        <mat-form-field appearance="outline" class="custom-mat-form-field">
+          <mat-label>Password</mat-label>
+          <input matInput [type]="hidePassword ? 'password' : 'text'" placeholder="Type your password" formControlName="password"  class="custom-input">
+          <button mat-icon-button matSuffix (click)="togglePasswordVisibility()">
+            <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+          </button>
+        </mat-form-field>  
+  
+        <button type="submit" mat-raised-button color="primary" class="login-button">Login</button>
+      </form>
+      <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
+      <div class="login-link">Not a member?  <a [routerLink]="['/signup']" class="signup-link">SignUp</a></div>
+    </div>
+  </div>
