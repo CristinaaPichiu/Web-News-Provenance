@@ -130,6 +130,34 @@ class SPARQLService:
         partial_articles = self.search_partial_match(keywords_list)
         return partial_articles, "Partial matches"
 
+    def advanced_search(self, keywords=None, wordcount=None, inLanguage=None, author_name=None, author_nationality=None, publisher=None, datePublished=None, wordcount_min=None, wordcount_max=None, datePublished_min=None, datePublished_max=None):
+        """
+        Searches for articles based on advanced search criteria.
+        Args:
+            keywords: Keywords to search for.
+            wordcount: Number of words in the article.
+            inLanguage: Language of the article.
+            author_name: Name of the author.
+            author_nationality: Nationality of the author.
+            publisher: Name of the publisher.
+            datePublished: Date the article was published.
+        Returns:
+            List of articles matching the search criteria.
+        """
+        logging.info(f"Advanced search with keywords: {keywords}, wordcount: {wordcount}, inLanguage: {inLanguage}, author_name: {author_name}, author_nationality: {author_nationality}, publisher: {publisher}, datePublished: {datePublished}")
+
+        exact_matches = self.search_advanced_exact_match(keywords, wordcount, inLanguage, author_name,
+                                                         author_nationality, publisher, datePublished, wordcount_min,
+                                                         wordcount_max, datePublished_min, datePublished_max)
+        if exact_matches:
+            return exact_matches, "Exact matches"
+
+        partial_matches = self.search_advanced_partial_match(keywords, wordcount, inLanguage, author_name,
+                                                             author_nationality, publisher, datePublished,
+                                                             wordcount_min, wordcount_max, datePublished_min,
+                                                             datePublished_max)
+        return partial_matches, "Partial matches"
+
     def get_all_articles(self):
         logging.info("Retrieving all articles from the Fuseki dataset")
         results = self.search_all_articles()
@@ -192,6 +220,105 @@ class SPARQLService:
 
         return processed_results
 
+    def search_advanced_exact_match(self, keywords=None, wordcount=None, inLanguage=None, author_name=None,
+                                    author_nationality=None, publisher=None, datePublished=None, wordcount_min=None,
+                                    wordcount_max=None, datePublished_min=None, datePublished_max=None):
+        """
+        Searches for articles that match all keywords with additional metadata.
+        Args:
+            keywords: Keywords to search for.
+            wordcount: Number of words in the article.
+            inLanguage: Language of the article.
+            author_name: Name of the author.
+            author_nationality: Nationality of the author.
+            publisher: Name of the publisher.
+            datePublished: Date the article was published.
+        Returns:
+            List of articles with detailed metadata matching all search criteria.
+        """
+        logging.info(
+            f"Advanced search with keywords: {keywords}, wordcount: {wordcount}, inLanguage: {inLanguage}, author_name: {author_name}, author_nationality: {author_nationality}, publisher: {publisher}, datePublished: {datePublished}")
+        filters = []
+        keywords_list = []
+        if keywords:
+            keywords_list = keywords.split()
+            filters = [
+                f'EXISTS {{ ?article schema:keywords ?keyword{index} . FILTER(CONTAINS(LCASE(STR(?keyword{index})), "{keyword.lower()}")) }}'
+                for index, keyword in enumerate(keywords_list)
+            ]
+
+        if wordcount:
+            filters.append(
+                f'EXISTS {{ ?article <http://schema.org/wordCount> "{wordcount}"^^<http://www.w3.org/2001/XMLSchema#integer> }}')
+
+        if inLanguage:
+            filters.append(f'EXISTS {{ ?article schema:inLanguage "{inLanguage}" }}')
+
+        if author_name:
+            filters.append(f'EXISTS {{ ?authorObj schema:name "{author_name}" }}')
+
+        if author_nationality:
+            filters.append(f'EXISTS {{ ?authorObj schema:nationality "{author_nationality}" }}')
+
+        if publisher:
+            filters.append(f'EXISTS {{ ?publisherObj schema:name "{publisher}" }}')
+
+        if datePublished:
+            filters.append(
+                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#date> }}')
+
+        if wordcount_min and wordcount_max:
+            filters.append(
+                f'EXISTS {{ ?article schema:wordCount ?wordCount . FILTER(?wordCount >= {wordcount_min} && ?wordCount <= {wordcount_max}) }}')
+
+        if datePublished_min and datePublished_max:
+            filters.append(
+                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#date> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#date>) }}')
+
+        exact_match_query = f"""
+            PREFIX schema: <http://schema.org/>
+            SELECT DISTINCT ?article ?headline ?abstract ?author ?publisher ?datePublished ?thumbnailUrl
+            WHERE {{
+                ?article schema:headline ?headline .
+                OPTIONAL {{ ?article schema:abstract ?abstract }}
+                OPTIONAL {{
+                    ?article schema:author ?authorObj .
+                    ?authorObj schema:name ?author
+                }}
+                OPTIONAL {{
+                    ?article schema:publisher ?publisherObj .
+                    ?publisherObj schema:name ?publisher
+                }}
+                OPTIONAL {{ ?article schema:datePublished ?datePublished }}
+                OPTIONAL {{ ?article schema:thumbnailUrl ?thumbnailUrl }}
+                FILTER(
+                    {" && ".join(filters)}
+                )
+            }}
+            LIMIT 10
+        """
+        logging.info(exact_match_query)
+
+        # Execute the query and process results
+        raw_results = self.execute_search_sparql_query(exact_match_query)
+
+        # Transform raw results into a more structured format
+        processed_results = []
+        for result in raw_results:
+            processed_result = {
+                'url': result.get('url', ''),
+                'headline': result.get('headline', ''),
+                'abstract': result.get('abstract', ''),
+                'author': result.get('author', ''),
+                'datePublished': result.get('datePublished', ''),
+                'thumbnailUrl': result.get('thumbnailUrl', ''),
+                'keywords': keywords_list  # Include the original search keywords
+            }
+            processed_results.append(processed_result)
+
+        return processed_results
+
+
     def search_partial_match(self, keywords_list):
         """
         Searches for articles that match at least one keyword.
@@ -228,6 +355,105 @@ class SPARQLService:
             LIMIT 10
         """
         return self.execute_search_sparql_query(partial_match_query)
+
+    def search_advanced_partial_match(self, keywords, wordcount=None, inLanguage=None, author_name=None,
+                                      author_nationality=None, publisher=None, datePublished=None,
+                                      wordcount_min=None, wordcount_max=None, datePublished_min=None,
+                                      datePublished_max=None):
+        """
+        Searches for articles that match at least one keyword with additional metadata.
+        Args:
+            keywords: Keywords to search for.
+            wordcount: Number of words in the article.
+            inLanguage: Language of the article.
+            author_name: Name of the author.
+            author_nationality: Nationality of the author.
+            publisher: Name of the publisher.
+            datePublished: Date the article was published.
+        Returns:
+            List of articles with detailed metadata matching at least one search criteria.
+        """
+        logging.info(
+            f"Advanced partial search with keywords: {keywords}, wordcount: {wordcount}, inLanguage: {inLanguage}, author_name: {author_name}, author_nationality: {author_nationality}, publisher: {publisher}, datePublished: {datePublished}")
+        keywords_list = []
+        filters = []
+        if keywords:
+            keywords_list = keywords.split()
+            filters = [
+                f'EXISTS {{ ?article schema:keywords ?keyword{index} . FILTER(CONTAINS(LCASE(STR(?keyword{index})), "{keyword.lower()}")) }}'
+                for index, keyword in enumerate(keywords_list)
+            ]
+
+        if wordcount:
+            filters.append(
+                f'EXISTS {{ ?article <http://schema.org/wordCount> "{wordcount}"^^<http://www.w3.org/2001/XMLSchema#integer> }}')
+
+        if inLanguage:
+            filters.append(f'EXISTS {{ ?article schema:inLanguage "{inLanguage}" }}')
+
+        if author_name:
+            filters.append(f'EXISTS {{ ?authorObj schema:name "{author_name}" }}')
+
+        if author_nationality:
+            filters.append(f'EXISTS {{ ?authorObj schema:nationality "{author_nationality}" }}')
+
+        if publisher:
+            filters.append(f'EXISTS {{ ?publisherObj schema:name "{publisher}" }}')
+
+        if datePublished:
+            filters.append(
+                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#date> }}')
+
+        if wordcount_min and wordcount_max:
+            filters.append(
+                f'EXISTS {{ ?article schema:wordCount ?wordCount . FILTER(?wordCount >= {wordcount_min} && ?wordCount <= {wordcount_max}) }}')
+
+        if datePublished_min and datePublished_max:
+            filters.append(
+                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#date> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#date>) }}')
+
+        partial_match_query = f"""
+            PREFIX schema: <http://schema.org/>
+            SELECT DISTINCT ?article ?headline ?abstract ?author ?publisher ?datePublished ?thumbnailUrl
+            WHERE {{
+                ?article schema:headline ?headline .
+                OPTIONAL {{ ?article schema:abstract ?abstract }}
+                OPTIONAL {{
+                    ?article schema:author ?authorObj .
+                    ?authorObj schema:name ?author
+                }}
+                OPTIONAL {{
+                    ?article schema:publisher ?publisherObj .
+                    ?publisherObj schema:name ?publisher
+                }}
+                OPTIONAL {{ ?article schema:datePublished ?datePublished }}
+                OPTIONAL {{ ?article schema:thumbnailUrl ?thumbnailUrl }}
+                FILTER(
+                    {" || ".join(filters)}
+                )
+            }}
+            LIMIT 10
+        """
+        logging.info(partial_match_query)
+
+        # Execute the query and process results
+        raw_results = self.execute_search_sparql_query(partial_match_query)
+
+        # Transform raw results into a more structured format
+        processed_results = []
+        for result in raw_results:
+            processed_result = {
+                'url': result.get('url', ''),
+                'headline': result.get('headline', ''),
+                'abstract': result.get('abstract', ''),
+                'author': result.get('author', ''),
+                'datePublished': result.get('datePublished', ''),
+                'thumbnailUrl': result.get('thumbnailUrl', ''),
+                'keywords': keywords_list  # Include the original search keywords
+            }
+            processed_results.append(processed_result)
+
+        return processed_results
 
     def search_all_articles(self):
         search_query = f"""

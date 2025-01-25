@@ -1,12 +1,8 @@
-import json
 import logging
 import os
-from bs4 import BeautifulSoup
-from langcodes import Language
 from rdflib import Graph, URIRef, Literal
 import requests
-import extruct
-from selenium.webdriver.support.expected_conditions import none_of
+
 
 from models.scraper import BeautifulSoupScraper
 from models.entity import Person, Organization, Author, Editor, Publisher
@@ -89,7 +85,10 @@ class GraphBuilder:
                         getattr(publisher.entity, setter_method)(value)
         publisher.entity.node_uri = URIRef(entity_uri)
         for attribute, value in publisher.entity.__dict__().items():
-            if value and attribute != 'node_uri':
+            if value and attribute in ['birthDate','deathDate']:
+                self.graph.add(
+                    (URIRef(publisher.entity.node_uri), URIRef(f"http://schema.org/{attribute}"), Literal(value, datatype="http://www.w3.org/2001/XMLSchema#dateTime")))
+            elif value and attribute != 'node_uri':
                 self.graph.add(
                     (URIRef(publisher.entity.node_uri), URIRef(f"http://schema.org/{attribute}"), Literal(value)))
         self.graph.add((URIRef(publisher.entity.node_uri), URIRef("http://schema.org/@type"), Literal(publisher.type)))
@@ -379,6 +378,8 @@ class GraphBuilder:
                         node_uri = self.generate_entity_uri_item(namespace, key, value)
                         self.graph.add((URIRef(article_url), predicate_uri, node_uri))
                         self.add_entity_to_graph(node_uri, value, is_organization=(key == 'publisher'), entity_type=key)
+                    elif key == 'datePublished' or key == 'dateModified' or key == 'dateCreated':
+                        self.graph.add((URIRef(article_url), predicate_uri, Literal(value, datatype="http://www.w3.org/2001/XMLSchema#dateTime")))
                     else:
                         self.graph.add((URIRef(article_url), predicate_uri, Literal(value)))
         except Exception as e:

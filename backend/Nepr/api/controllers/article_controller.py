@@ -48,6 +48,39 @@ def search_keywords():
         return jsonify({"message": "Success", "data": serializable_results, "type": match_type}), 200
     return jsonify({"message": "No articles found"}), 404
 
+@article_blueprint.route("/search/advanced", methods=['GET'])
+def search_advanced():
+    keywords = request.args.get('keywords')
+    inLanguage = request.args.get('inLanguage')
+    author_name = request.args.get('author')
+    author_nationality = request.args.get('nationality')
+    publisher = request.args.get('publisher')
+    wordcount_min = request.args.get('wordcount_min')
+    wordcount_max = request.args.get('wordcount_max')
+    datePublished_min = request.args.get('datePublished_min')
+    datePublished_max = request.args.get('datePublished_max')
+    datePublished = None
+    if not datePublished_max and not datePublished_min:
+        datePublished = request.args.get('datePublished')
+    wordcount = None
+    if not wordcount_max and not wordcount_min:
+        wordcount = request.args.get('wordcount')
+    print(keywords, wordcount, inLanguage, author_name, author_nationality, publisher, datePublished, wordcount_min,
+          wordcount_max, datePublished_min, datePublished_max)
+    if not (
+            keywords or wordcount_min or wordcount_max or datePublished_min or datePublished_max or wordcount or datePublished or inLanguage or author_name or author_nationality or publisher):
+        return jsonify({"message": "A parameter is required"}), 400
+    results, match_type = sparql_service.advanced_search(keywords, wordcount, inLanguage, author_name,
+                                                         author_nationality, publisher, datePublished, wordcount_min,
+                                                         wordcount_max, datePublished_min, datePublished_max)
+    if results:
+        serializable_results = [
+            {key: str(value) for key, value in article.items()}
+            for article in results
+        ]
+        return jsonify({"message": "Success", "data": serializable_results, "type": match_type}), 200
+    return jsonify({"message": "No articles found"}), 404
+
 @article_blueprint.route('/', methods=['GET'])
 def get_article_by_url():
     """
