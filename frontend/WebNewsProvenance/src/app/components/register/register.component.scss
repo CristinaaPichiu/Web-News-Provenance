@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@600&display=swap');
 
 $font-color: #333;
-$button-color: #C19A6B	;
+$button-color: #A3D1DE	;
 $button-text-color: white;
 $border-radius: 8px;
 $container-padding: 20px;
@@ -11,7 +11,7 @@ $overlay-z-index: 10;
 
 .container {
     display: flex;
-    font-family: 'Open Sans', sans-serif; /* Adjusts the font family */
+    font-family: 'Open Sans', sans-serif;
     align-items: flex-start;
     justify-content: center;
     padding: $container-padding;
@@ -56,7 +56,7 @@ $overlay-z-index: 10;
 }
 
 .logo {
-    width: 135px; 
+    width: 120px; 
     height: auto;
     margin-left: 0;
 }
@@ -81,7 +81,7 @@ $overlay-z-index: 10;
     border-radius: $border-radius;
     margin-left: auto;
     margin-right: 50px;
-    margin-top: 20px;
+    margin-top: 0px;
     text-align: center;
 
     h2 {

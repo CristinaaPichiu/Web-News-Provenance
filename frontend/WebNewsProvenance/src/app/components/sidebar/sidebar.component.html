@@ -1,0 +1,43 @@
+<mat-sidenav-container class="sidenav-container">
+    <mat-sidenav #sidenav [mode]="isSmallScreen ? 'over' : 'side'" [opened]="!isSmallScreen" class="sidenav" fixedInViewport="true">
+      <div class="sidebar-header">
+        <div class="user-info">
+          <img src="/assets/logo.png" alt="Image" class="img" routerLink="/welcome">
+        </div>
+      </div>
+  
+      <mat-nav-list class="nav-list">
+        <a mat-list-item routerLink="/dashboard" matTooltip="Dashboard">
+          <mat-icon>dashboard</mat-icon>
+        </a>
+        <a mat-list-item routerLink="/articles" matTooltip="View Articles">
+          <mat-icon>article</mat-icon>
+        </a>
+        <a mat-list-item routerLink="/create-article" matTooltip="Create Article">
+          <mat-icon>create</mat-icon>
+        </a>
+        <a mat-list-item routerLink="/bookmarks" matTooltip="Bookmarked Articles">
+          <mat-icon>bookmark</mat-icon>
+        </a>
+        <a mat-list-item routerLink="/trending" matTooltip="Trending Articles">
+          <mat-icon>trending_up</mat-icon>
+        </a>
+        <a mat-list-item routerLink="/settings" matTooltip="Settings">
+          <mat-icon>settings</mat-icon>
+        </a>
+        <div class="logout-wrapper">
+          <a mat-list-item routerLink="/logout" matTooltip="Logout">
+            <mat-icon>exit_to_app</mat-icon>
+          </a>
+        </div>
+      </mat-nav-list>
+      
+    </mat-sidenav>
+  
+    <mat-sidenav-content>
+      <button *ngIf="isSmallScreen" (click)="sidenav.toggle()" class="toggle-button">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+      
+     </mat-sidenav-content>
+  </mat-sidenav-container>

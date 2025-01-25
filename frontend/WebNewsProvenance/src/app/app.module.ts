@@ -12,7 +12,13 @@ import { LoginComponent } from './components/login/login.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { MatTabsModule } from '@angular/material/tabs'; // Import for MatTabsModule
+import { MatTabsModule } from '@angular/material/tabs';
+import { SettingsComponent } from './components/settings/settings.component';
+import { SidebarComponent } from './components/sidebar/sidebar.component'; 
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatList } from '@angular/material/list';
+import { MatListModule } from '@angular/material/list';
+
 
 
 @NgModule({
@@ -21,6 +27,8 @@ import { MatTabsModule } from '@angular/material/tabs'; // Import for MatTabsMod
     LoginComponent,
     RegisterComponent,
     DashboardComponent,
+    SettingsComponent,
+    SidebarComponent
   ],
   imports: [
     BrowserModule,
@@ -31,7 +39,11 @@ import { MatTabsModule } from '@angular/material/tabs'; // Import for MatTabsMod
     MatIconModule,
     ReactiveFormsModule,
     BrowserAnimationsModule,
-    MatTabsModule
+    MatTabsModule,
+    MatSidenavModule,
+    MatListModule,
+    AppRoutingModule
+
   ],
   providers: [],
   bootstrap: [AppComponent]

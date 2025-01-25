@@ -1,0 +1,33 @@
+<app-sidebar></app-sidebar>
+<div class="settings-container">
+
+  <div class="password-section">
+    <div class="password-img-container">
+      <img src="/assets/forgot_password.png" class="password-img" alt="Password Image">
+    </div>
+    <div class="password-form-container">
+      <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()">
+        <mat-form-field appearance="outline">
+          <mat-label>Current Password</mat-label>
+          <input matInput formControlName="currentPassword" type="password">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>New Password</mat-label>
+          <input matInput formControlName="newPassword" type="password">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Confirm New Password</mat-label>
+          <input matInput formControlName="confirmNewPassword" type="password">
+        </mat-form-field>
+        <button mat-button type="submit" class="fixed-button">Update Password</button>
+        <div *ngIf="saveSuccess" class="alert-success" role="alert">
+          Your password has been successfully updated.
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
