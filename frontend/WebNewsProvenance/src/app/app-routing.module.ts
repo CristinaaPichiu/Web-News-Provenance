@@ -4,6 +4,7 @@ import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
+import {SettingsComponent} from "./components/settings/settings.component";
 
 
 const routes: Routes = [
@@ -22,6 +23,10 @@ const routes: Routes = [
   {
     path:'sidebar',
     component: SidebarComponent
+  },
+  {
+    path:'settings',
+    component: SettingsComponent
   }
 ];
 

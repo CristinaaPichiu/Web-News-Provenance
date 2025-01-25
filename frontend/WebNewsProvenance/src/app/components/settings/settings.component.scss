@@ -1,0 +1,62 @@
+.settings-container {
+  display: flex;
+  padding: 20px;
+  align-items: flex-start;
+
+
+  .password-section {
+    display: flex;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .password-img-container {
+    width: 40%;
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 20px;
+    margin-left: 50px;
+  }
+
+  .password-img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .password-form-container {
+    margin-top:140px;
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-right:10px;
+
+  }
+
+  mat-form-field {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  .fixed-button {
+    position: fixed;
+    bottom: 80px;
+    right: 100px;
+    padding: 10px 20px;
+    background-color: #a3d1de;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .fixed-button:hover {
+    background-color: #7ba4db;
+  }
+
+}
+
+
+
+
