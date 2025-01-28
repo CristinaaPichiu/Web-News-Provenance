@@ -1,5 +1,9 @@
+import logging
+
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token
+
+from api.services.email_service import send_welcome_email
 from databases.db_postgresql_conn import connect
 from api.services.auth_service import get_user_by_email, create_user, authenticate_user
 
@@ -18,30 +22,35 @@ def refresh():
 @auth_blueprint.route('/register', methods=['POST'])
 def register():
     session, _ = connect()
-
     email = request.json.get('email')
     password = request.json.get('password')
     first_name = request.json.get('first_name', '')
     last_name = request.json.get('last_name', '')
 
-    # Verifică dacă utilizatorul există
     existing_user = get_user_by_email(session, email)
     if existing_user:
         return jsonify({"message": "Email already in use"}), 409
-
-    # Creează utilizatorul folosind serviciul
     try:
-        create_user(session, email, password, first_name, last_name)
+        user = create_user(session, email, password, first_name, last_name)
         session.commit()
+        try:
+            send_welcome_email(email, first_name)
+        except Exception as e:
+            logging.error(f"Failed to send welcome email: {str(e)}")
+            session.delete(user)
+            session.commit()
+            return jsonify({"message": "Failed to send welcome email, registration rolled back"}), 500
 
-        # Generează token-ul JWT
+        # Dacă totul a mers bine, întoarce succes
         access_token = create_access_token(identity=email)
         return jsonify({"message": "User registered successfully", "access_token": access_token}), 201
+
     except Exception as e:
         session.rollback()
         return jsonify({"message": "Failed to register user", "error": str(e)}), 500
     finally:
         session.close()
+
 
 @auth_blueprint.route('/login', methods=['POST'])
 def login():
@@ -57,7 +66,6 @@ def login():
     if not user:
         return jsonify({"message": "Invalid email or password"}), 401
 
-    # Generează token-uri
     access_token = create_access_token(identity=email)
     refresh_token = create_refresh_token(identity=email)
 

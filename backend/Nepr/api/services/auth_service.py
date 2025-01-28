@@ -10,12 +10,12 @@ def get_user_by_email(session: Session, email: str):
     """
     return session.query(User).filter_by(email=email).first()
 
-def create_user(session: Session, email: str, password: str, first_name: str = '', last_name: str = ''):
+def create_user(session: Session, email: str, password: str, first_name: str = '', last_name: str = '', role='user'):
     """
     Create a new user in the database.
     """
     hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
-    new_user = User(email=email, first_name=first_name, last_name=last_name, password_hash=hashed_password)
+    new_user = User(email=email, first_name=first_name, last_name=last_name, password_hash=hashed_password, role=role)
     session.add(new_user)
     return new_user
 
