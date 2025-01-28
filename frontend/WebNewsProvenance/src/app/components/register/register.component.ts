@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from 'src/app/services/auth.service';
 
 
 @Component({
@@ -18,13 +19,14 @@ export class RegisterComponent {
 
   constructor(
     private formBuilder: FormBuilder,
+    private authService: AuthService, // Injectează AuthService
     private router: Router
   ) { }
 
   ngOnInit(): void {
     this.registerForm = this.formBuilder.group({
-      firstname: ['', [Validators.required]],
-      lastname: ['', [Validators.required]],
+      first_name: ['', [Validators.required]],
+      last_name: ['', [Validators.required]],
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.pattern(this.passwordPattern)]],
       confirmPassword: ['', [Validators.required]]
@@ -49,8 +51,17 @@ export class RegisterComponent {
 
   onRegister(): void {
     if (this.registerForm.valid && !this.registerForm.hasError('notSame')) {
-      const { firstname, lastname, email, password } = this.registerForm.value;
-     
+      const { first_name, last_name, email, password } = this.registerForm.value;
+      this.authService.register(first_name, last_name, email, password).subscribe({
+        next: () => {
+          this.router.navigate(['/dashboard']); // Redirecționează după înregistrare
+          console.log('Registration successful');
+        },
+        error: (error: Error) => {
+          this.errorMessage = error.message;
+          console.log('Registration failed:', this.errorMessage);
+        }
+      });
     } else {
       this.errorMessage = 'Please check your registration details and try again.';
     }

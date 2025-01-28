@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -24,6 +25,7 @@ export class LoginComponent implements OnInit {
 
   constructor(
     private formBuilder: FormBuilder,
+    private authService: AuthService,
     private router: Router
   ) {}
 
@@ -34,11 +36,12 @@ export class LoginComponent implements OnInit {
   }
 
   onLogin(): void {
-    this.errorMessage = ''; 
     if (this.loginForm.valid) {
       const { email, password } = this.loginForm.value;
-      
-      
+      this.authService.login(email, password).subscribe({
+        next: () => this.router.navigate(['/dashboard']), // Actualizează cu ruta corespunzătoare
+        error: (error: Error) => this.errorMessage = error.message
+      });
     } else {
       this.errorMessage = 'Please fill in all required fields.';
     }
