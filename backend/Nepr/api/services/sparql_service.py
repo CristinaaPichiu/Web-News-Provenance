@@ -1,5 +1,7 @@
 import logging
 import os
+from datetime import datetime
+
 import requests
 from dotenv import load_dotenv
 from matplotlib.image import thumbnail
@@ -264,16 +266,25 @@ class SPARQLService:
             filters.append(f'EXISTS {{ ?publisherObj schema:name "{publisher}" }}')
 
         if datePublished:
+            if isinstance(datePublished, str):
+                datePublished = datetime.fromisoformat(datePublished)
+            datePublished = datePublished.isoformat(timespec='seconds')+ "+00:00"
             filters.append(
-                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#date> }}')
+                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#dateTime> }}')
 
         if wordcount_min and wordcount_max:
             filters.append(
                 f'EXISTS {{ ?article schema:wordCount ?wordCount . FILTER(?wordCount >= {wordcount_min} && ?wordCount <= {wordcount_max}) }}')
 
         if datePublished_min and datePublished_max:
+            if isinstance(datePublished_min, str):
+                datePublished_min = datetime.fromisoformat(datePublished_min)
+            if isinstance(datePublished_max, str):
+                datePublished_max = datetime.fromisoformat(datePublished_max)
+            datePublished_min = datePublished_min.isoformat(timespec='seconds')+ "+00:00"
+            datePublished_max = datePublished_max.isoformat(timespec='seconds') + "+00:00"
             filters.append(
-                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#date> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#date>) }}')
+                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#dateTime> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#dateTime>) }}')
 
         exact_match_query = f"""
             PREFIX schema: <http://schema.org/>
@@ -401,16 +412,25 @@ class SPARQLService:
             filters.append(f'EXISTS {{ ?publisherObj schema:name "{publisher}" }}')
 
         if datePublished:
+            if isinstance(datePublished, str):
+                datePublished = datetime.fromisoformat(datePublished)
+            datePublished = datePublished.isoformat(timespec='seconds') + "+00:00"
             filters.append(
-                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#date> }}')
+                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#dateTime> }}')
 
         if wordcount_min and wordcount_max:
             filters.append(
                 f'EXISTS {{ ?article schema:wordCount ?wordCount . FILTER(?wordCount >= {wordcount_min} && ?wordCount <= {wordcount_max}) }}')
 
         if datePublished_min and datePublished_max:
+            if isinstance(datePublished_min, str):
+                datePublished_min = datetime.fromisoformat(datePublished_min)
+            if isinstance(datePublished_max, str):
+                datePublished_max = datetime.fromisoformat(datePublished_max)
+            datePublished_min = datePublished_min.isoformat(timespec='seconds') + "+00:00"
+            datePublished_max = datePublished_max.isoformat(timespec='seconds') + "+00:00"
             filters.append(
-                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#date> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#date>) }}')
+                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#dateTime> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#dateTime>) }}')
 
         partial_match_query = f"""
             PREFIX schema: <http://schema.org/>
