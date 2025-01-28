@@ -1,5 +1,8 @@
 import logging
 import os
+from collections import Counter
+from datetime import datetime
+
 import requests
 from dotenv import load_dotenv
 from matplotlib.image import thumbnail
@@ -13,6 +16,87 @@ class SPARQLService:
         self.fuseki_url = os.getenv("FUSEKI_URL")
         self.service = service
         self.options = options
+
+    def get_recommendations(self, user_history):
+        """
+        Generates article recommendations based on the user's history.
+        Args:
+            user_history: List of article URLs from the user's history.
+        Returns:
+            List of recommended articles.
+        """
+        logging.info(f"Generating recommendations for user history: {user_history}")
+        viewed_articles = []
+        for url in user_history:
+            results = self.get_article_by_url(url)
+            if results:
+                viewed_articles.append(results)
+        search_filters = self.get_most_viewed_details(viewed_articles)
+        recommended_articles, match_type = self.advanced_search(**search_filters)
+        filtered_recommendations = [article for article in recommended_articles if article['url'] not in user_history]
+        return filtered_recommendations
+        return recommended_articles
+
+    def get_most_viewed_details(self, viewed_articles):
+        """
+        Extracts the most viewed details from a list of articles.
+        Args:
+            viewed_articles: List of viewed articles.
+        Returns:
+            Search filters based on the most viewed details.
+        """
+        logging.info(f"Extracting most viewed details from articles: {viewed_articles}")
+        most_viewed_details = {
+            "keywords": None,
+            "wordcount_min": None,
+            "wordcount_max": None,
+            "inLanguage": None,
+            "author_name": None,
+            "publisher": None,
+            "datePublished_min": None,
+            "datePublished_max": None}
+
+        word_counts = []
+        dates_published = []
+        keywords = []
+        authors = []
+        publishers = []
+        languages = []
+
+        for article in viewed_articles:
+            if article.get("wordCount"):
+                word_counts.append(article["wordCount"])
+            if article.get("datePublished"):
+                dates_published.append(article["datePublished"])
+            if article.get("keywords"):
+                keywords.extend(article["keywords"])
+            if article.get("author"):
+                authors.extend([author["name"] for author in article["author"] if author.get("name")])
+            if article.get("publisher"):
+                publishers.extend([publisher["name"] for publisher in article["publisher"] if publisher.get("name")])
+            if article.get("inLanguage"):
+                languages.append(article["inLanguage"])
+
+        if word_counts:
+            most_viewed_details["wordcount_min"] = min(word_counts)
+            most_viewed_details["wordcount_max"] = max(word_counts)
+        if dates_published:
+            most_viewed_details["datePublished_min"] = min(dates_published)
+            most_viewed_details["datePublished_max"] = max(dates_published)
+        if keywords:
+            most_viewed_details["keywords"] = [keyword for keyword, _ in Counter(keywords).most_common(10)]
+            #merge keywords separated by space
+            most_viewed_details["keywords"] = " ".join(most_viewed_details["keywords"])
+        if authors:
+            most_viewed_details["author_name"] = Counter(authors).most_common(1)[0][0]
+        if publishers:
+            most_viewed_details["publisher"] = Counter(publishers).most_common(1)[0][0]
+        if languages:
+            most_viewed_details["inLanguage"] = Counter(languages).most_common(1)[0][0]
+
+        return most_viewed_details
+
+
 
     def create_graph(self, url):
         """
@@ -264,16 +348,25 @@ class SPARQLService:
             filters.append(f'EXISTS {{ ?publisherObj schema:name "{publisher}" }}')
 
         if datePublished:
+            if isinstance(datePublished, str):
+                datePublished = datetime.fromisoformat(datePublished)
+            datePublished = datePublished.isoformat(timespec='seconds')+ "+00:00"
             filters.append(
-                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#date> }}')
+                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#dateTime> }}')
 
         if wordcount_min and wordcount_max:
             filters.append(
                 f'EXISTS {{ ?article schema:wordCount ?wordCount . FILTER(?wordCount >= {wordcount_min} && ?wordCount <= {wordcount_max}) }}')
 
         if datePublished_min and datePublished_max:
+            if isinstance(datePublished_min, str):
+                datePublished_min = datetime.fromisoformat(datePublished_min)
+            if isinstance(datePublished_max, str):
+                datePublished_max = datetime.fromisoformat(datePublished_max)
+            datePublished_min = datePublished_min.isoformat(timespec='seconds')+ "+00:00"
+            datePublished_max = datePublished_max.isoformat(timespec='seconds') + "+00:00"
             filters.append(
-                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#date> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#date>) }}')
+                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#dateTime> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#dateTime>) }}')
 
         exact_match_query = f"""
             PREFIX schema: <http://schema.org/>
@@ -401,16 +494,25 @@ class SPARQLService:
             filters.append(f'EXISTS {{ ?publisherObj schema:name "{publisher}" }}')
 
         if datePublished:
+            if isinstance(datePublished, str):
+                datePublished = datetime.fromisoformat(datePublished)
+            datePublished = datePublished.isoformat(timespec='seconds') + "+00:00"
             filters.append(
-                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#date> }}')
+                f'EXISTS {{ ?article schema:datePublished "{datePublished}"^^<http://www.w3.org/2001/XMLSchema#dateTime> }}')
 
         if wordcount_min and wordcount_max:
             filters.append(
                 f'EXISTS {{ ?article schema:wordCount ?wordCount . FILTER(?wordCount >= {wordcount_min} && ?wordCount <= {wordcount_max}) }}')
 
         if datePublished_min and datePublished_max:
+            if isinstance(datePublished_min, str):
+                datePublished_min = datetime.fromisoformat(datePublished_min)
+            if isinstance(datePublished_max, str):
+                datePublished_max = datetime.fromisoformat(datePublished_max)
+            datePublished_min = datePublished_min.isoformat(timespec='seconds') + "+00:00"
+            datePublished_max = datePublished_max.isoformat(timespec='seconds') + "+00:00"
             filters.append(
-                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#date> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#date>) }}')
+                f'EXISTS {{ ?article schema:datePublished ?datePublished . FILTER(?datePublished >= "{datePublished_min}"^^<http://www.w3.org/2001/XMLSchema#dateTime> && ?datePublished <= "{datePublished_max}"^^<http://www.w3.org/2001/XMLSchema#dateTime>) }}')
 
         partial_match_query = f"""
             PREFIX schema: <http://schema.org/>
