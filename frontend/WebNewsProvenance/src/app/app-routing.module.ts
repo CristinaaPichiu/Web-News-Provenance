@@ -5,6 +5,7 @@ import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import {SettingsComponent} from "./components/settings/settings.component";
+import { ForgetPasswordComponent } from './components/forget-password/forget-password.component';
 
 
 const routes: Routes = [
@@ -27,6 +28,10 @@ const routes: Routes = [
   {
     path:'settings',
     component: SettingsComponent
+  },
+  {
+    path:'forget-password',
+    component: ForgetPasswordComponent
   }
 ];
 

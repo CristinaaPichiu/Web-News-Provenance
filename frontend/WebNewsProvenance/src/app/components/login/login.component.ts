@@ -13,6 +13,7 @@ export class LoginComponent implements OnInit {
   hidePassword = true;
   hideConfirmPassword = true;
 
+
   togglePasswordVisibility(): void {
     this.hidePassword = !this.hidePassword;
   }
@@ -39,12 +40,14 @@ export class LoginComponent implements OnInit {
     if (this.loginForm.valid) {
       const { email, password } = this.loginForm.value;
       this.authService.login(email, password).subscribe({
-        next: () => this.router.navigate(['/dashboard']), // Actualizează cu ruta corespunzătoare
+        next: () => this.router.navigate(['/dashboard']), 
         error: (error: Error) => this.errorMessage = error.message
       });
     } else {
       this.errorMessage = 'Please fill in all required fields.';
     }
   }
+
+
   
 }
