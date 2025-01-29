@@ -33,10 +33,13 @@
             <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
           </button>
         </mat-form-field>  
-  
+        <a [routerLink]="['/forget-password']" class="forgot-password-link">Forgot Password?</a>
+
         <button type="submit" mat-raised-button color="primary" class="login-button">Login</button>
       </form>
       <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
-      <div class="login-link">Not a member?  <a [routerLink]="['/signup']" class="signup-link">SignUp</a></div>
+      <div class="login-link">Not a member?  <a [routerLink]="['/register']" class="signup-link">SignUp</a></div>
+
     </div>
+   
   </div>
