@@ -76,30 +76,49 @@ class TestGraphBuilder(unittest.TestCase):
             "results": {
                 "bindings": [{
                     "nationalityLabel": {"value": "American"},
-                    "occupationLabel": {"value": "Actor"},
+                    "occupationLabel": {"value": "journalist"},
                     "birthDate": {"value": "1970-01-01"},
+                    "birthPlaceLabel": {"value": "New York"},
+                    "deathDate": {"value": "2020-01-01"},
+                    "deathPlaceLabel": {"value": "Los Angeles"},
+                    "affiliationLabel": {"value": "Test Affiliation"},
+                    "genderLabel": {"value": "Male"}
                 }]
             }
         }
         mock_get.return_value.raise_for_status = MagicMock()
         data = self.graph_builder.get_wikidata_data("John Doe")
         self.assertEqual(data['nationality'], "American")
-        self.assertEqual(data['jobTitle'], "Actor")
+        self.assertEqual(data['jobTitle'], "journalist")
         self.assertEqual(data['birthDate'], "1970-01-01")
-        self.assertIsNone(data['deathDate'])
+        self.assertEqual(data['birthPlace'], "New York")
+        self.assertEqual(data['deathDate'], "2020-01-01")
+        self.assertEqual(data['deathPlace'], "Los Angeles")
+        self.assertEqual(data['affiliation'], "Test Affiliation")
+        self.assertEqual(data['gender'], "Male")
 
     @patch("requests.get")
     def test_parse_person_data_missing_fields(self, mock_get):
         # Mock response with missing fields
         mock_get.return_value.json.return_value = {
             "results": {
-                "bindings": [{}]
+                "bindings": [{
+                    "entity": {"value": "http://www.wikidata.org/entity/Q12345"},
+                    "occupationLabel": {"value": "journalist"}
+                }]
             }
         }
         mock_get.return_value.raise_for_status = MagicMock()
         data = self.graph_builder.get_wikidata_data("Jane Doe")
-        for key in data:
-            self.assertIsNone(data[key])
+        self.assertIsNotNone(data)
+        self.assertEqual(data['jobTitle'], "journalist")
+        self.assertIsNone(data.get('nationality'))
+        self.assertIsNone(data.get('birthDate'))
+        self.assertIsNone(data.get('birthPlace'))
+        self.assertIsNone(data.get('deathDate'))
+        self.assertIsNone(data.get('deathPlace'))
+        self.assertIsNone(data.get('affiliation'))
+        self.assertIsNone(data.get('gender'))
 
     @patch("requests.get", side_effect=requests.exceptions.RequestException("Error"))
     def test_parse_person_data_request_exception(self, mock_get):
@@ -387,9 +406,10 @@ class TestGraphBuilder3(unittest.TestCase):
             "results": {
                 "bindings": [
                     {
-                        "occupationLabel": {"value": "Science Journalist"},
+                        "occupationLabel": {"value": "Journalist"},
                         "nationalityLabel": {"value": "American"},
-                        "birthDate": {"value": "1980-01-01"}
+                        "birthDate": {"value": "1980-01-01"},
+                        "genderLabel": {"value": "Male"}
                     }
                 ]
             }
@@ -397,8 +417,9 @@ class TestGraphBuilder3(unittest.TestCase):
         mock_get.return_value = mock_response
         data = self.graph_builder.get_wikidata_data("John Doe")
         self.assertEqual(data['nationality'], "American")
-        self.assertEqual(data['jobTitle'], "Science Journalist")
+        self.assertEqual(data['jobTitle'], "Journalist")
         self.assertEqual(data['birthDate'], "1980-01-01")
+        self.assertEqual(data['gender'], "Male")
 
     @patch('requests.get')
     def test_get_organization_wikidata_data(self, mock_get):
@@ -407,7 +428,7 @@ class TestGraphBuilder3(unittest.TestCase):
             "results": {
                 "bindings": [
                     {
-                        "entityLabel": {"value": "Org Inc."},
+                        "entity": {"value": "http://www.wikidata.org/entity/Q12345"},
                         "publishingPrinciples": {"value": "Principles URL"}
                     }
                 ]
@@ -415,8 +436,8 @@ class TestGraphBuilder3(unittest.TestCase):
         }
         mock_get.return_value = mock_response
         data = self.graph_builder.get_organization_wikidata_data("Org Inc.")
-        self.assertEqual(data[0]['organization'], "Org Inc.")
-        self.assertEqual(data[0]['publishingPrinciples'], "Principles URL")
+        self.assertEqual(data['organization'], "http://www.wikidata.org/entity/Q12345")
+        self.assertEqual(data['publishingPrinciples'], "Principles URL")
 
 class TestGraphBuilderStaticMethods(unittest.TestCase):
     def setUp(self):
@@ -428,25 +449,25 @@ class TestGraphBuilderStaticMethods(unittest.TestCase):
 
     def test_set_key_image(self):
         expected_keys = ['contentUrl', 'duration', 'embedUrl', 'height', 'uploadDate', 'width',
-                         'caption', 'embeddedTextCaption', '@type']
+                         'caption', 'embeddedTextCaption', '@type', 'url']
         result = GraphBuilder._set_key('image')
         self.assertEqual(result, expected_keys)
 
     def test_set_key_thumbnail(self):
         expected_keys = ['contentUrl', 'duration', 'embedUrl', 'height', 'uploadDate', 'width',
-                         'caption', 'embeddedTextCaption', '@type']
+                         'caption', 'embeddedTextCaption', '@type', 'url']
         result = GraphBuilder._set_key('thumbnail')
         self.assertEqual(result, expected_keys)
 
     def test_set_key_audio(self):
         expected_keys = ['contentUrl', 'duration', 'embedUrl', 'height', 'uploadDate', 'width',
-                         'caption', 'transcript', '@type']
+                         'caption', 'transcript', '@type', 'url']
         result = GraphBuilder._set_key('audio')
         self.assertEqual(result, expected_keys)
 
     def test_set_key_video(self):
         expected_keys = ['contentUrl', 'duration', 'embedUrl', 'height', 'uploadDate', 'width',
-                         'caption', 'videoQuality', '@type']
+                         'caption', 'videoQuality', '@type', 'url']
         result = GraphBuilder._set_key('video')
         self.assertEqual(result, expected_keys)
 
