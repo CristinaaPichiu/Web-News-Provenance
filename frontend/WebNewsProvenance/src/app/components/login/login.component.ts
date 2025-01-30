@@ -59,7 +59,7 @@ export class LoginComponent implements OnInit {
     this.authService.requestPasswordReset(email).subscribe({
       next: (response) => {
         console.log(response);
-        this.router.navigate(['/set-password']); // Navighează la pagina de confirmare
+        this.router.navigate(['/forget-password']); 
       },
       error: (err) => {
         console.error('Error sending reset email', err);
