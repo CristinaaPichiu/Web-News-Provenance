@@ -1,13 +1,13 @@
-<div class="container">
+<div class="container" vocab="https://schema.org/" typeof="WebPage">
   <div class="overlay-container">
-    <img src="/assets/logo.png" alt="Logo" class="logo">
-    <p class="welcome-text">Welcome!<br>Join Us: Explore, Share, Discover!</p>
+    <img src="/assets/logo.png" alt="Logo" class="logo" property="schema:logo">
+    <p class="welcome-text" property="schema:description">Welcome!<br>Join Us: Explore, Share, Discover!</p>
   </div>
-  
+
     <div class="image-container">
-      <img src="/assets/registerBun.png" alt="Descriere Imagine" class="background-image" class="custom-input">
+      <img src="/assets/registerBun.png" alt="Descriere Imagine" class="background-image custom-input" property="schema:image" >
     </div>
-  
+
     <div class="register-container">
       <h2>Register</h2>
       <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
@@ -17,14 +17,14 @@
             <input matInput placeholder="Type your first name" formControlName="first_name" class="custom-input">
             <mat-icon matSuffix>person</mat-icon>
           </mat-form-field>
-  
+
           <mat-form-field appearance="outline" class="custom-mat-form-field">
             <mat-label>Last name</mat-label>
             <input matInput placeholder="Type your last name" formControlName="last_name" class="custom-input">
             <mat-icon matSuffix>person</mat-icon>
           </mat-form-field>
         </div>
-  
+
         <mat-form-field appearance="outline" class="custom-mat-form-field">
           <mat-label>Email</mat-label>
           <input matInput type="email" placeholder="Type your email" formControlName="email" class="custom-input">
@@ -36,7 +36,7 @@
             Please enter a valid email address.
           </mat-error>
         </mat-form-field>
-  
+
         <mat-form-field appearance="outline" class="custom-mat-form-field">
           <mat-label>Password</mat-label>
           <input matInput [type]="hidePassword ? 'password' : 'text'" placeholder="Type your password" formControlName="password"  class="custom-input">
@@ -44,7 +44,7 @@
             <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
           </button>
         </mat-form-field>
-        
+
         <mat-form-field appearance="outline" class="custom-mat-form-field">
           <mat-label>Confirm Password</mat-label>
           <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" placeholder="Confirm Password" formControlName="confirmPassword" class="custom-input">
@@ -54,13 +54,13 @@
           <mat-error *ngIf="registerForm.errors?.['notSame'] && (registerForm.get('password')?.touched || registerForm.get('confirmPassword')?.touched)">
             Passwords must match.
           </mat-error>
-          
+
         </mat-form-field>
-        
+
         <div *ngIf="registerForm.get('password')?.errors && registerForm.get('password')?.touched" class="error-message">
           Password must be at least 8 characters long and contain at least one uppercase letter and one special character.
         </div>
-  
+
         <button type="submit" mat-raised-button color="primary" class="register-button">Register</button>
       </form>
       <div class="register-link">Already a member? <a [routerLink]="['/login']" class="login-link">Login</a></div>
