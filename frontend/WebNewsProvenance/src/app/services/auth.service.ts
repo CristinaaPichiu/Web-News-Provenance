@@ -8,8 +8,9 @@ import { catchError, tap } from 'rxjs/operators';
   providedIn: 'root'
 })
 export class AuthService {
-  private baseUrl = 'http://localhost:5000/auth'; // Actualizează cu URL-ul serverului tău
+  private baseUrl = 'http://localhost:5000/auth';
 
+  private apiUrl = 'http://localhost:5000/email';
   constructor(private http: HttpClient) {}
 
   login(email: string, password: string): Observable<any> {
@@ -51,6 +52,14 @@ register(first_name: string, last_name: string, email: string, password: string)
       return throwError(() => new Error(message));
     })
   );
+}
+
+resetPassword(token: string, newPassword: string): Observable<any> {
+  return this.http.post(`${this.baseUrl}/reset-password/${token}`, { new_password: newPassword });
+}
+
+requestPasswordReset(email: string): Observable<any> {
+  return this.http.post(`${this.apiUrl}/request-reset-email`, { email });
 }
 
 
