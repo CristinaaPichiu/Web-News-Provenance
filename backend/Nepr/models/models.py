@@ -4,6 +4,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import declarative_base
 import uuid
 from sqlalchemy.schema import ForeignKey
+from werkzeug.security import generate_password_hash, check_password_hash
+
 Base = declarative_base()
 
 class User(Base):
@@ -14,6 +16,14 @@ class User(Base):
     first_name = Column(String)
     password_hash = Column(Text)
     role = Column(String)
+
+    def set_password(self, password):
+        """Setează și hash-uiește parola utilizatorului."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """Verifică dacă parola introdusă corespunde cu hash-ul."""
+        return check_password_hash(self.password_hash, password)
 
 class UserHistory(Base):
     __tablename__ = 'user_history'

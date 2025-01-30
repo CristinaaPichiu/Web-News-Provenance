@@ -6,6 +6,7 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { SidebarComponent } from './components/sidebar/sidebar.component';
 import {SettingsComponent} from "./components/settings/settings.component";
 import { ForgetPasswordComponent } from './components/forget-password/forget-password.component';
+import { SetPasswordComponent } from './components/set-password/set-password.component';
 
 
 const routes: Routes = [
@@ -32,6 +33,10 @@ const routes: Routes = [
   {
     path:'forget-password',
     component: ForgetPasswordComponent
+  },
+  {
+    path: 'set-password',
+    component: SetPasswordComponent
   }
 ];
 
