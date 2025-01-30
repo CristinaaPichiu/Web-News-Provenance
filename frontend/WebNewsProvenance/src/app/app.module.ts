@@ -20,6 +20,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatList } from '@angular/material/list';
 import { MatListModule } from '@angular/material/list';
 import { ForgetPasswordComponent } from './components/forget-password/forget-password.component';
+import { SetPasswordComponent } from './components/set-password/set-password.component';
 
 
 
@@ -31,7 +32,8 @@ import { ForgetPasswordComponent } from './components/forget-password/forget-pas
     DashboardComponent,
     SettingsComponent,
     SidebarComponent,
-    ForgetPasswordComponent
+    ForgetPasswordComponent,
+    SetPasswordComponent
   ],
   imports: [
     BrowserModule,

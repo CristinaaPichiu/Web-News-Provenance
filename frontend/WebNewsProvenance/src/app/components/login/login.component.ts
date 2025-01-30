@@ -48,6 +48,26 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  requestPasswordReset(): void {
+    const email = this.loginForm.get('email')?.value;
+
+    if (!email) {
+      this.errorMessage = 'Please enter your email before resetting the password.';
+      return;
+    }
+
+    this.authService.requestPasswordReset(email).subscribe({
+      next: (response) => {
+        console.log(response);
+        this.router.navigate(['/forget-password']); 
+      },
+      error: (err) => {
+        console.error('Error sending reset email', err);
+        this.errorMessage = 'Failed to send reset email. Please try again.';
+      }
+    });
+  }
+
 
   
 }
