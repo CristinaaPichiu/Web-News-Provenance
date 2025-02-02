@@ -581,6 +581,22 @@ class SPARQLService:
         return self.execute_search_sparql_query(search_query)
 
 
+    def search_certain_articles(self, links):
+        """
+        Searches for articles that match the given URLs.
+        Args:
+            links: List of URLs to search for.
+        Returns:
+            List of articles matching the URLs.
+        """
+        logging.info(f"Searching for articles with URLs: {links}")
+        articles = []
+        for link in links:
+            article = self.get_article_by_url(link)
+            if article:
+                articles.append(article)
+        return articles
+
     def execute_search_sparql_query(self, query):
         """
         Executes a SPARQL query and returns the results.

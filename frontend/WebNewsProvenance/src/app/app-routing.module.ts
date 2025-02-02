@@ -10,6 +10,7 @@ import { SetPasswordComponent } from './components/set-password/set-password.com
 import { UserCardComponent } from './components/user-card/user-card.component';
 import { ShowUsersComponent } from './components/show-users/show-users.component';
 import { CreateArticleComponent } from './components/create-article/create-article.component';
+import {GraphVisualizationComponent} from "./components/graph-visualization/graph-visualization.component";
 
 
 const routes: Routes = [
@@ -52,6 +53,10 @@ const routes: Routes = [
   {
     path: 'create-article',
     component: CreateArticleComponent
+  },
+  {
+    path: 'graph-view',
+    component: GraphVisualizationComponent
   }
 ];
 

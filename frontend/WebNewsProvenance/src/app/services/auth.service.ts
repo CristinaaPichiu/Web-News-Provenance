@@ -10,7 +10,7 @@ import { HttpHeaders } from '@angular/common/http';
 })
 export class AuthService {
   private roleSource = new BehaviorSubject<string>(''); // Stocare pentru rol
-  public role = this.roleSource.asObservable(); 
+  public role = this.roleSource.asObservable();
   private baseUrl = 'http://localhost:5000/auth';
 
   private apiUrl = 'http://localhost:5000/email';
@@ -21,12 +21,10 @@ export class AuthService {
       tap(response => {
         localStorage.setItem('access_token', response.access_token);
         localStorage.setItem('refresh_token', response.refresh_token);
-        this.loadUserRole(); // După autentificare, încarcă rolul
+        this.loadUserRole();
       })
     );
   }
-
-  // Adaugă această metodă în serviciul AuthService
 
 register(first_name: string, last_name: string, email: string, password: string): Observable<any> {
   return this.http.post<any>(`${this.baseUrl}/register`, { first_name, last_name, email, password }).pipe(
