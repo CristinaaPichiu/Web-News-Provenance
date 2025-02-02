@@ -1,0 +1,9 @@
+<h2 mat-dialog-title>Confirmare Ștergere</h2>
+<mat-dialog-content>
+  <p>Sigur vrei să ștergi utilizatorul <strong>{{ data.user.first_name }} {{ data.user.last_name }}</strong>?</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Anulează</button>
+  <button mat-raised-button color="warn" (click)="onConfirm()">Șterge</button>
+</mat-dialog-actions>

@@ -1,13 +1,16 @@
 // src/app/services/auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
+import { HttpHeaders } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private roleSource = new BehaviorSubject<string>(''); // Stocare pentru rol
+  public role = this.roleSource.asObservable(); 
   private baseUrl = 'http://localhost:5000/auth';
 
   private apiUrl = 'http://localhost:5000/email';
@@ -18,17 +21,7 @@ export class AuthService {
       tap(response => {
         localStorage.setItem('access_token', response.access_token);
         localStorage.setItem('refresh_token', response.refresh_token);
-      }),
-      catchError(error => {
-        let message = "Login failed. Please check your credentials.";
-        if (error.error instanceof ErrorEvent) {
-          message = "An unexpected error occurred.";
-        } else if (error.status === 401) {
-          message = "Invalid email or password";
-        } else if (error.error?.message) {
-          message = error.error.message;
-        }
-        return throwError(() => new Error(message));
+        this.loadUserRole(); // După autentificare, încarcă rolul
       })
     );
   }
@@ -63,5 +56,42 @@ requestPasswordReset(email: string): Observable<any> {
 }
 
 
-  // Metode suplimentare pentru logout, refresh token etc.
+loadUserRole() {
+  const token = localStorage.getItem('access_token');
+  if (!token) return;
+
+  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+  this.http.get<{ role: string }>(`${this.baseUrl}/get-user-role`, { headers }).subscribe(
+    response => this.roleSource.next(response.role),
+    error => console.error("Failed to load user role", error)
+  );
+}
+
+getRole(): Observable<string> {
+  return this.role;
+}
+
+getUsers(): Observable<any[]> {
+  const token = localStorage.getItem('access_token');
+  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+  return this.http.get<any[]>(`${this.baseUrl}/get-users`, { headers });
+}
+
+updateUser(userId: string, userData: any): Observable<any> {
+  const token = localStorage.getItem('access_token'); // Asigură-te că salvezi tokenul la login
+  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+  return this.http.put(`${this.baseUrl}/update-user/${userId}`, userData, { headers });
+}
+
+deleteUser(userId: string): Observable<any> {
+  const token = localStorage.getItem('access_token'); // Preia tokenul JWT
+  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+  return this.http.delete(`${this.baseUrl}/delete-user/${userId}`, { headers });
+}
+
+
 }

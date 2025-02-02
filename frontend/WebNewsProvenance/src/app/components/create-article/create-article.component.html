@@ -1,0 +1,54 @@
+<app-sidebar></app-sidebar>
+
+<div class="form-container">
+  <h2>Please add a valid URL to generate an article</h2>
+
+  <form [formGroup]="articleForm" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>URL</mat-label>
+      <input matInput formControlName="url" placeholder="Enter a valid URL">
+      <mat-error *ngIf="articleForm.controls['url'].hasError('pattern')">
+        URL is not valid
+      </mat-error>
+    </mat-form-field>
+
+    <button mat-raised-button color="primary" type="submit" [disabled]="articleForm.invalid">
+      Submit
+    </button>
+  </form>
+
+  <!-- ✅ SUCCESS MESSAGE - STRUCTURED DISPLAY -->
+  <mat-card *ngIf="responseData" class="response-card">
+    <mat-card-header>
+      <mat-card-title>{{ responseData.data.headline }}</mat-card-title>
+      <mat-card-subtitle>{{ responseData.data.datePublished | date }}</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <p><strong>Abstract:</strong> {{ responseData.data.abstract }}</p>
+
+      <div *ngIf="responseData.data.author.length">
+        <p><strong>Author:</strong> {{ responseData.data.author[0].name }}</p>
+      </div>
+
+      <div *ngIf="responseData.data.image.length">
+        <img [src]="responseData.data.image[0].url" alt="Article Image" class="article-image"/>
+      </div>
+
+      <p><strong>Language:</strong> {{ responseData.data.inLanguage }}</p>
+
+      <p><strong>Source:</strong> 
+        <a [href]="responseData.data.url" target="_blank">{{ responseData.data.url }}</a>
+      </p>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card *ngIf="errorMessage" class="error-card">
+    <mat-card-header>
+      <mat-card-title>Error</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p>{{ errorMessage }}</p>
+    </mat-card-content>
+  </mat-card>
+</div>

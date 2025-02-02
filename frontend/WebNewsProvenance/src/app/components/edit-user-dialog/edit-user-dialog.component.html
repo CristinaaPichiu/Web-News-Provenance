@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>Resetare Parolă</h2>
+<mat-dialog-content>
+  <form [formGroup]="editUserForm">
+    <mat-form-field appearance="outline" style="width: 100%;">
+      <mat-label>New Password</mat-label>
+      <input matInput type="password" formControlName="password">
+      <mat-error *ngIf="editUserForm.controls['password'].invalid && editUserForm.controls['password'].touched">
+        Parola trebuie să aibă cel puțin 6 caractere.
+      </mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="editUserForm.invalid">Save</button>
+</mat-dialog-actions>

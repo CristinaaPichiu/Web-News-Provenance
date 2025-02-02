@@ -1,0 +1,9 @@
+<div class="page-container">
+  <app-sidebar></app-sidebar>
+
+    
+    <div class="user-list">
+      <app-user-card *ngFor="let user of users" [user]="user"   (delete)="deleteUser($event)">
+        ></app-user-card>
+    </div>
+</div>

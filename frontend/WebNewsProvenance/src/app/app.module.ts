@@ -1,6 +1,9 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
+import { MatCardModule } from '@angular/material/card';
+import { MatDialogModule } from '@angular/material/dialog';
+
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -21,6 +24,11 @@ import { MatList } from '@angular/material/list';
 import { MatListModule } from '@angular/material/list';
 import { ForgetPasswordComponent } from './components/forget-password/forget-password.component';
 import { SetPasswordComponent } from './components/set-password/set-password.component';
+import { ShowUsersComponent } from './components/show-users/show-users.component';
+import { UserCardComponent } from './components/user-card/user-card.component';
+import { EditUserDialogComponent } from './components/edit-user-dialog/edit-user-dialog.component';
+import { DeleteUserDialogComponent } from './components/delete-user-dialog/delete-user-dialog.component';
+import { CreateArticleComponent } from './components/create-article/create-article.component';
 
 
 
@@ -33,7 +41,12 @@ import { SetPasswordComponent } from './components/set-password/set-password.com
     SettingsComponent,
     SidebarComponent,
     ForgetPasswordComponent,
-    SetPasswordComponent
+    SetPasswordComponent,
+    ShowUsersComponent,
+    UserCardComponent,
+    EditUserDialogComponent,
+    DeleteUserDialogComponent,
+    CreateArticleComponent,
   ],
   imports: [
     BrowserModule,
@@ -48,8 +61,9 @@ import { SetPasswordComponent } from './components/set-password/set-password.com
     MatSidenavModule,
     MatListModule,
     AppRoutingModule,
-    HttpClientModule
-
+    HttpClientModule,
+    MatCardModule,
+    MatDialogModule
   ],
   providers: [],
   bootstrap: [AppComponent]

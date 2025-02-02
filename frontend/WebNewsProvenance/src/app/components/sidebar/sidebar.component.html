@@ -13,24 +13,29 @@
         <a mat-list-item routerLink="/articles" matTooltip="View Articles">
           <mat-icon>article</mat-icon>
         </a>
-        <a mat-list-item routerLink="/create-article" matTooltip="Create Article">
-          <mat-icon>create</mat-icon>
-        </a>
-        <a mat-list-item routerLink="/bookmarks" matTooltip="Bookmarked Articles">
-          <mat-icon>bookmark</mat-icon>
-        </a>
-        <a mat-list-item routerLink="/trending" matTooltip="Trending Articles">
-          <mat-icon>trending_up</mat-icon>
-        </a>
+      
+        <!-- Aceste link-uri apar doar pentru admin -->
+        <ng-container *ngIf="role === 'admin'">
+          <a mat-list-item routerLink="/show-users" matTooltip="See users">
+            <mat-icon>group</mat-icon>
+          </a>
+          <a mat-list-item routerLink="/create-article" matTooltip="Bookmarked Articles">
+            <mat-icon>bookmark</mat-icon>
+          </a>
+       
+        </ng-container>
+      
         <a mat-list-item routerLink="/settings" matTooltip="Settings">
           <mat-icon>settings</mat-icon>
         </a>
+      
         <div class="logout-wrapper">
           <a mat-list-item routerLink="/logout" matTooltip="Logout">
             <mat-icon>exit_to_app</mat-icon>
           </a>
         </div>
       </mat-nav-list>
+      
       
     </mat-sidenav>
   

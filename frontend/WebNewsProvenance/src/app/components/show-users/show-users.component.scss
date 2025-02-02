@@ -1,0 +1,35 @@
+.page-container {
+    display: flex;
+    height: 100vh; /* Ocupă întreaga înălțime a paginii */
+  }
+  
+  app-sidebar {
+    flex: 0 0 250px; /* Sidebar fix, lățime 250px */
+    height: 100vh;
+  }
+  
+
+  
+  .title {
+    text-align: left;
+    margin-left: 30px; /* Ajustează în funcție de spațiul necesar */
+  }
+  
+  .user-list {
+    margin-left: -100px;
+    margin-top: 150px;
+    display: flex;
+    flex-wrap: wrap; /* Cardurile să fie în rânduri */
+    gap: 20px;
+    justify-content: flex; /* Aliniere la stânga */
+    padding: 0 20px; /* Aliniere la marginea textului */
+    justify-content: center; /* Așază cardurile la centru */
+
+  }
+  
+  .user-card {
+    flex: 0 0 calc(20% - 20px); /* 5 carduri pe rând */
+    min-width: 250px;
+    max-width: 300px;
+  }
+  

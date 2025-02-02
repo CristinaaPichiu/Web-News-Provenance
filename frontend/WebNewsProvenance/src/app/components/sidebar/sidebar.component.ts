@@ -1,5 +1,6 @@
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Component, OnInit } from '@angular/core';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -9,8 +10,10 @@ import { Component, OnInit } from '@angular/core';
 export class SidebarComponent implements OnInit {
 
   isSmallScreen = false;
+  role: string = '';
 
-  constructor(private breakpointObserver: BreakpointObserver) {}
+
+  constructor(private breakpointObserver: BreakpointObserver, private authService: AuthService) {}
 
   ngOnInit() {
     this.breakpointObserver.observe([
@@ -19,6 +22,14 @@ export class SidebarComponent implements OnInit {
     ]).subscribe(result => {
       this.isSmallScreen = result.matches;
     });
+
+    this.authService.getRole().subscribe(role => {
+      this.role = role;
+    });
+
+    // Dacă utilizatorul este deja logat, preia rolul la inițializare
+    this.authService.loadUserRole();
+
   }
 
 }

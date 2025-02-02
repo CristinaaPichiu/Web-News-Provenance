@@ -1,13 +1,14 @@
 import logging
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app as app
 
 from api.services.email_service import send_welcome_email
 from databases.db_postgresql_conn import connect
 from api.services.auth_service import get_user_by_email, create_user, authenticate_user
+from models.models import User
 
 auth_blueprint = Blueprint('auth', __name__)
 
@@ -91,19 +92,17 @@ def register():
 @auth_blueprint.route('/login', methods=['POST'])
 def login():
     session, _ = connect()
-
     email = request.json.get('email')
     password = request.json.get('password')
-
-    if not email or not password:
-        return jsonify({"message": "Email and password are required"}), 400
 
     user = authenticate_user(session, email, password)
     if not user:
         return jsonify({"message": "Invalid email or password"}), 401
 
-    access_token = create_access_token(identity=email)
-    refresh_token = create_refresh_token(identity=email)
+    # Setează 'sub' ca email și adaugă 'role' ca un claim custom
+    additional_claims = {"role": user.role}
+    access_token = create_access_token(identity=email, additional_claims=additional_claims)
+    refresh_token = create_refresh_token(identity=email, additional_claims=additional_claims)
 
     return jsonify({
         "message": "Login successful",
@@ -112,8 +111,132 @@ def login():
     }), 200
 
 
+
+
+
 @auth_blueprint.route('/protected', methods=['GET'])
 @jwt_required()
 def protected():
     current_user = get_jwt_identity()
     return jsonify({"message": f"Welcome, {current_user}!"}), 200
+
+
+
+@auth_blueprint.route('/get-user-role', methods=['GET'])
+@jwt_required()
+def get_user_role():
+    try:
+        claims = get_jwt()
+        role = claims['role']
+        return jsonify({"role": role}), 200
+    except KeyError:
+        return jsonify({"error": "Role not found in JWT"}), 404
+    except Exception as e:
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
+
+
+@auth_blueprint.route('/get-users', methods=['GET'])
+@jwt_required()
+def get_users():
+    try:
+        session, _ = connect()
+        claims = get_jwt()
+
+        # Verifică dacă utilizatorul este admin
+        if claims.get("role") != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        # Selectează doar utilizatorii cu rolul "user"
+        users = session.query(User).filter_by(role="user").all()
+
+        users_list = [{
+            "id": user.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "role": user.role
+        } for user in users]
+
+        session.close()
+        return jsonify(users_list), 200
+
+    except Exception as e:
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
+
+import uuid  # Importă biblioteca uuid pentru conversii
+
+@auth_blueprint.route('/delete-user/<string:user_id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(user_id):
+    """
+    Șterge un utilizator pe baza ID-ului (UUID).
+    """
+    try:
+        session, _ = connect()
+        claims = get_jwt()
+
+        # Verifică dacă utilizatorul este admin
+        if claims.get("role") != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        # Convertim user_id din string în UUID
+        user_uuid = uuid.UUID(user_id)
+        user = session.query(User).filter_by(id=user_uuid).first()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        session.delete(user)
+        session.commit()
+        return jsonify({"message": "User deleted successfully"}), 200
+
+    except ValueError:
+        return jsonify({"error": "Invalid user ID format"}), 400  # Dacă UUID-ul nu este valid
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
+    finally:
+        session.close()
+
+
+@auth_blueprint.route('/update-user/<string:user_id>', methods=['PUT'])
+@jwt_required()
+def update_user(user_id):
+    try:
+        session, _ = connect()
+        claims = get_jwt()
+
+        # Verifică dacă utilizatorul este admin
+        if claims.get("role") != "admin":
+            return jsonify({"error": "Unauthorized"}), 403
+
+        # Convertim user_id din string în UUID
+        user_uuid = uuid.UUID(user_id)
+        user = session.query(User).filter_by(id=user_uuid).first()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Verifică dacă request-ul conține body JSON
+        if not request.json:
+            return jsonify({"error": "Request body is empty"}), 400
+
+        # Preluăm datele trimise de frontend
+        data = request.get_json()
+
+        if "password" in data and data["password"]:
+            user.set_password(data["password"])  # Presupun că ai o metodă `set_password` care hash-uiește parola
+
+        session.commit()
+        return jsonify({"message": "User updated successfully"}), 200
+
+    except ValueError:
+        return jsonify({"error": "Invalid user ID format"}), 400  # Dacă UUID-ul nu este valid
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
+    finally:
+        session.close()
+
+
+

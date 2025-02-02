@@ -7,6 +7,9 @@ import { SidebarComponent } from './components/sidebar/sidebar.component';
 import {SettingsComponent} from "./components/settings/settings.component";
 import { ForgetPasswordComponent } from './components/forget-password/forget-password.component';
 import { SetPasswordComponent } from './components/set-password/set-password.component';
+import { UserCardComponent } from './components/user-card/user-card.component';
+import { ShowUsersComponent } from './components/show-users/show-users.component';
+import { CreateArticleComponent } from './components/create-article/create-article.component';
 
 
 const routes: Routes = [
@@ -37,6 +40,18 @@ const routes: Routes = [
   {
     path: 'set-password',
     component: SetPasswordComponent
+  },
+  {
+    path: 'user-card',
+    component: UserCardComponent
+  },
+  {
+    path: 'show-users',
+    component: ShowUsersComponent
+  },
+  {
+    path: 'create-article',
+    component: CreateArticleComponent
   }
 ];
 
