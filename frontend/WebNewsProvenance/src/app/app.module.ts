@@ -18,7 +18,7 @@ import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { MatTabsModule } from '@angular/material/tabs';
 import { SettingsComponent } from './components/settings/settings.component';
-import { SidebarComponent } from './components/sidebar/sidebar.component'; 
+import { SidebarComponent } from './components/sidebar/sidebar.component';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatList } from '@angular/material/list';
 import { MatListModule } from '@angular/material/list';
@@ -29,7 +29,12 @@ import { UserCardComponent } from './components/user-card/user-card.component';
 import { EditUserDialogComponent } from './components/edit-user-dialog/edit-user-dialog.component';
 import { DeleteUserDialogComponent } from './components/delete-user-dialog/delete-user-dialog.component';
 import { CreateArticleComponent } from './components/create-article/create-article.component';
-
+import { HistoryCardComponent } from './components/history-card/history-card.component';
+import {MatChipsModule} from "@angular/material/chips";
+import { MatStepperModule } from '@angular/material/stepper';
+import { RecommendedArticlesComponent } from './components/recommended-articles/recommended-articles.component';
+import { GraphVisualizationComponent } from './components/graph-visualization/graph-visualization.component';
+import { FormsModule } from '@angular/forms';
 
 
 @NgModule({
@@ -47,6 +52,9 @@ import { CreateArticleComponent } from './components/create-article/create-artic
     EditUserDialogComponent,
     DeleteUserDialogComponent,
     CreateArticleComponent,
+    HistoryCardComponent,
+    RecommendedArticlesComponent,
+    GraphVisualizationComponent
   ],
   imports: [
     BrowserModule,
@@ -63,7 +71,10 @@ import { CreateArticleComponent } from './components/create-article/create-artic
     AppRoutingModule,
     HttpClientModule,
     MatCardModule,
-    MatDialogModule
+    MatDialogModule,
+    MatChipsModule,
+    MatStepperModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

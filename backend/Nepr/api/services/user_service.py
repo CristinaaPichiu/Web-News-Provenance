@@ -29,3 +29,15 @@ class UserService:
         except Exception as e:
             logging.error(e)
             return None
+
+    def get_user_top_history(self, session: Session, email: str, limit: int = 10):
+        """
+        Returns the top article URLs from the user's history.
+        """
+        try:
+            user_history = session.query(UserHistory).filter_by(user_email=email).order_by(
+                UserHistory.date_accessed.desc()).limit(limit).all()
+            return [history.article_url for history in user_history] if user_history else None
+        except Exception as e:
+            logging.error(e)
+            return None

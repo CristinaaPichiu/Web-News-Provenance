@@ -1,0 +1,34 @@
+<h2>History</h2>
+<div class="carousel-container" *ngIf="articles.length">
+  <button mat-icon-button class="nav-button prev" (click)="previous()" [disabled]="currentIndex === 0">
+    <mat-icon>chevron_left</mat-icon>
+  </button>
+
+  <div class="article-card-container-wrapper">
+    <div class="article-card-container" #scrollContainer
+         [style.transform]="'translateX(' + (-currentIndex * 33.33) + '%)'">
+      <div *ngFor="let article of articles" class="article-card">
+        <mat-card>
+          <div class="card-image-container">
+            <img mat-card-image [src]="article.thumbnailUrl" alt="Article Image" />
+          </div>
+          <mat-card-content>
+            <mat-card-title><a [href]="article.url" target="_blank" style="font-size: small">{{ article.headline }}</a></mat-card-title>
+            <mat-card-subtitle style="font-size: smaller">
+              {{ article.author }} - {{ article.datePublished | date:'mediumDate' }}
+            </mat-card-subtitle>
+            <mat-chip-set aria-label="Chip set" class="article-keywords-set">
+              <mat-chip *ngFor="let keyword of article.keywords.slice(0, 4)">
+                {{ keyword }}
+              </mat-chip>
+            </mat-chip-set>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </div>
+  </div>
+
+  <button mat-icon-button class="nav-button next" (click)="next()" [disabled]="currentIndex >= maxIndex">
+    <mat-icon>chevron_right</mat-icon>
+  </button>
+</div>
