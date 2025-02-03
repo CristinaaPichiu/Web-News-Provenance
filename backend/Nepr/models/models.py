@@ -31,3 +31,10 @@ class UserHistory(Base):
     user_email = Column(String, ForeignKey('users.email', ondelete='CASCADE'), nullable=False)
     article_url = Column(Text, nullable=False)
     date_accessed = Column(DateTime, nullable=False, default=datetime.now())
+
+class UserFavorites(Base):
+    __tablename__ = 'user_favorites'
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_email = Column(String, ForeignKey('users.email', ondelete='CASCADE'), nullable=False)
+    article_url = Column(Text, nullable=False)
+    date_favorited = Column(DateTime, nullable=False, default=datetime.now())

@@ -12,7 +12,7 @@ import { ShowUsersComponent } from './components/show-users/show-users.component
 import { CreateArticleComponent } from './components/create-article/create-article.component';
 import {GraphVisualizationComponent} from "./components/graph-visualization/graph-visualization.component";
 import { SearchArticleComponent } from './components/search-article/search-article.component';
-
+import { FavoriteArticlesComponent } from './components/favorite-articles/favorite-articles.component';
 
 const routes: Routes = [
   {
@@ -62,6 +62,10 @@ const routes: Routes = [
   {
     path: 'search-article',
     component: SearchArticleComponent
+  },
+  {
+    path:'favorites',
+    component: FavoriteArticlesComponent
   }
 ];
 

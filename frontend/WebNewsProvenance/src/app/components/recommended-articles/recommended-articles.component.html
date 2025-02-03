@@ -11,6 +11,11 @@
         <mat-card>
           <div class="card-image-container">
             <img mat-card-image [src]="article.thumbnailUrl" alt="Article Image" />
+              <button mat-icon-button class="favorite-button" (click)="toggleFavorite(article)">
+                  <mat-icon [class.active]="article.isFavorite">
+                      {{article.isFavorite ? 'favorite' : 'favorite_border'}}
+                  </mat-icon>
+              </button>
           </div>
           <mat-card-content>
             <mat-card-title><a [href]="article.url" target="_blank" style="font-size: small">{{ article.headline }}</a></mat-card-title>
@@ -31,4 +36,8 @@
   <button mat-icon-button class="nav-button next" (click)="next()" [disabled]="currentIndex >= maxIndex">
     <mat-icon>chevron_right</mat-icon>
   </button>
+
+    <script type="application/ld+json">
+        {{ generateJsonLd() }}
+    </script>
 </div>

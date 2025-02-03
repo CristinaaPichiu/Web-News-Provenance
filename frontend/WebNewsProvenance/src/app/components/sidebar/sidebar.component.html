@@ -5,7 +5,7 @@
           <img src="/assets/logo.png" alt="Image" class="img" routerLink="/welcome">
         </div>
       </div>
-  
+
       <mat-nav-list class="nav-list">
         <a mat-list-item routerLink="/dashboard" matTooltip="Dashboard">
           <mat-icon>dashboard</mat-icon>
@@ -13,7 +13,15 @@
         <a mat-list-item routerLink="/search-article" matTooltip="View Articles">
           <mat-icon>article</mat-icon>
         </a>
-      
+
+        <a mat-list-item routerLink="/favorites" matTooltip="View Articles">
+          <mat-icon>favorite</mat-icon>
+        </a>
+
+        <a mat-list-item routerLink="/graph-view" matTooltip="Bookmarked Articles">
+          <mat-icon>apps</mat-icon>
+        </a>
+
         <!-- Aceste link-uri apar doar pentru admin -->
         <ng-container *ngIf="role === 'admin'">
           <a mat-list-item routerLink="/show-users" matTooltip="See users">
@@ -22,27 +30,27 @@
           <a mat-list-item routerLink="/create-article" matTooltip="Bookmarked Articles">
             <mat-icon>bookmark</mat-icon>
           </a>
-       
+
         </ng-container>
-      
+
         <a mat-list-item routerLink="/settings" matTooltip="Settings">
           <mat-icon>settings</mat-icon>
         </a>
-      
+
         <div class="logout-wrapper">
           <a mat-list-item routerLink="/logout" matTooltip="Logout">
             <mat-icon>exit_to_app</mat-icon>
           </a>
         </div>
       </mat-nav-list>
-      
-      
+
+
     </mat-sidenav>
-  
+
     <mat-sidenav-content>
       <button *ngIf="isSmallScreen" (click)="sidenav.toggle()" class="toggle-button">
         <mat-icon>chevron_right</mat-icon>
       </button>
-      
+
      </mat-sidenav-content>
   </mat-sidenav-container>

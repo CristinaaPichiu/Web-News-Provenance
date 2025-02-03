@@ -1,0 +1,114 @@
+.favorites-container {
+  padding: 20px;
+
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .article-card {
+    position: relative;
+
+    .card-image-container {
+      position: relative;
+
+      img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+      }
+
+      .favorite-button {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(255, 255, 255, 0.9);
+
+        .mat-icon {
+          color: #ff4081;
+
+          &.active {
+            fill: #ff4081;
+          }
+        }
+      }
+    }
+  }
+
+  mat-card {
+    margin: 8px;
+    height: calc(100% - 16px);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+  }
+
+  mat-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  mat-card-content {
+    flex-grow: 1;
+    overflow: hidden;
+    font-size: small;
+  }
+
+  .pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+
+    .page-info {
+      margin: 0 20px;
+    }
+  }
+}
+
+.page-container {
+  display: flex;
+  height: 96vh;
+  width: 99vw;
+  align-items: stretch;
+  background-color: white;
+}
+
+.main-container {
+  display: flex;
+  flex-grow: 1; /* Se extinde pentru a umple spațiul disponibil */
+}
+
+
+.content {
+  margin-top: 4vh;
+  margin-right: 20px;
+  flex-grow: 1;
+  background-color: #f0f0f0;
+  border-radius: 15px;
+  padding: 20px;
+  overflow: hidden; /* Ascunde overflow-ul */
+  overflow-y: scroll; /* Allow vertical scrolling without scrollbar */
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+
+}
+
+.content::-webkit-scrollbar {
+  display: none;
+}
+
+// Responsive adjustments
+@media (max-width: 1200px) {
+  .favorites-container .articles-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .favorites-container .articles-grid {
+    grid-template-columns: 1fr;
+  }
+}

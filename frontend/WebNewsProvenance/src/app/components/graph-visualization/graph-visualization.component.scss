@@ -1,8 +1,204 @@
-.move-icon, .zoom-in-icon, .zoom-out-icon {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
+.page-container {
+  display: flex;
+  height: 96vh;
+  width: 99vw;
+  align-items: stretch;
+  background-color: white;
 }
-:host {
-  display: block;
+
+.main-container {
+  display: flex;
+  flex-grow: 1;
+}
+
+.content {
+  display: flex; /* Enables side-by-side layout */
+  margin-top: 4vh;
+  margin-right: 20px;
+  max-height: 85vh;
+  flex-grow: 1;
+  background-color: #f0f0f0;
+  border-radius: 15px;
+  padding: 20px;
+  overflow: hidden;
+  overflow-y: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
+}
+
+.graph{
+  height: 85vh;
+}
+
+.graph-container {
+  flex-grow: 3;
+  max-width: 80vw;
+  position: relative;
+}
+
+
+.filters-section {
+  flex-grow: 1;
+  max-width: 15vw;
+  background-color: white;
+  padding: 16px;
+  border-left: 1px solid #ddd;
+  overflow-y: auto;
+}
+
+.graph-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.8); /* Slightly transparent */
+  padding: 8px;
+  border-radius: 10px;
+
+  pointer-events: auto; /* Ensures buttons remain clickable */
+}
+
+.graph-controls button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #507d95;
+  color: white;
+  transition: background 0.2s, transform 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.graph-controls button:hover {
+  background-color: #507d95;
+  transform: scale(1.1);
+}
+
+.control-button {
+  padding: 10px;
+  width: 100%;
+  border-radius: 5px;
+  background-color: #507d95;
+  color: white;
+  transition: background 0.2s, transform 0.2s;
+  border : none;
+
+}
+
+.control-button:hover {
+  background-color: #507d95;
+  transform: scale(1.1);
+}
+
+.control-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.search-input {
+  margin-top: 10px;
+  width: 90%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #507d95;
+  margin-bottom: 10px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #305d75;
+  box-shadow: 0 0 5px rgba(80, 125, 149, 0.5);
+}
+
+.search-results {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  width: 100%; /* Adjust width to match search-input */;
+}
+
+.search-container {
+  width: 100%;
+}
+
+.search-result-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 90%;
+}
+
+.search-result-item:hover {
+  background-color: #f5f5f5;
+}
+
+.result-label {
+  font-weight: 500;
+}
+
+.result-type {
+  margin-left: 8px;
+  font-size: 0.875rem;
+  color: #888;
+}
+
+mat-icon {
+  font-size: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-checkbox {
+  position: relative;
+  display: inline-block;
+  margin-right: 0.5rem;
+}
+
+.filters-button{
+  margin-bottom: 10px;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  opacity: 0;
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  margin: 0;
+  z-index: 1; /* Add this to ensure the checkbox is clickable */
+}
+
+.checkbox-display {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid;
+  border-radius: 0.25rem;
+  position: relative;
+  transition: all 0.2s;
+  pointer-events: none; /* Add this to ensure clicks pass through to the checkbox */
+}
+
+.custom-checkbox input[type="checkbox"]:checked + .checkbox-display::after {
+  content: '✓';
+  color: white;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.75rem;
+  pointer-events: none; /* Add this to ensure clicks pass through */
+}
+
+.custom-checkbox input[type="checkbox"]:focus + .checkbox-display {
+  box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
 }

@@ -37,7 +37,7 @@ import { GraphVisualizationComponent } from './components/graph-visualization/gr
 import { FormsModule } from '@angular/forms';
 import { SearchArticleComponent } from './components/search-article/search-article.component';
 import { ArticleDetailsModalComponent } from './components/article-details-modal/article-details-modal.component';
-
+import { FavoriteArticlesComponent } from './components/favorite-articles/favorite-articles.component';
 
 @NgModule({
   declarations: [
@@ -58,7 +58,8 @@ import { ArticleDetailsModalComponent } from './components/article-details-modal
     RecommendedArticlesComponent,
     GraphVisualizationComponent,
     SearchArticleComponent,
-    ArticleDetailsModalComponent
+    ArticleDetailsModalComponent,
+    FavoriteArticlesComponent
   ],
   imports: [
     BrowserModule,
