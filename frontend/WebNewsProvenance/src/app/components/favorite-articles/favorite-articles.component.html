@@ -1,0 +1,67 @@
+<div class="page-container" vocab="http://schema.org/" typeof="WebPage">
+  <div class="main-container">
+    <app-sidebar></app-sidebar>
+    <div class="content" property="mainContentOfPage">
+      <h2>Favorites</h2>
+      <div class="favorites-container" *ngIf="articles.length; else noFavorites">
+        <div class="articles-grid">
+          <div *ngFor="let article of paginatedArticles"
+               class="article-card"
+               typeof="Article"
+               property="article">
+            <mat-card>
+              <div class="card-image-container">
+                <img mat-card-image
+                     [src]="article.thumbnailUrl"
+                     alt="Article Image"
+                     property="image"/>
+                <button mat-icon-button class="favorite-button" (click)="removeFavorite(article.url)">
+                  <mat-icon class="active">favorite</mat-icon>
+                </button>
+              </div>
+              <mat-card-content>
+                <mat-card-title>
+                  <a [href]="article.url"
+                     target="_blank"
+                     property="url"
+                     style="font-size: small">
+                    <span property="headline">{{ article.headline }}</span>
+                  </a>
+                </mat-card-title>
+                <mat-card-subtitle style="font-size: smaller">
+                  <span property="author">{{ article.author }}</span> -
+                  <time property="datePublished">{{ article.datePublished | date:'mediumDate' }}</time>
+                </mat-card-subtitle>
+                <mat-chip-set aria-label="Chip set" class="article-keywords-set">
+                  <mat-chip style="font-size: x-small"
+                            *ngFor="let keyword of article.keywords.slice(0, 4)"
+                            property="keywords">
+                    {{ keyword }}
+                  </mat-chip>
+                </mat-chip-set>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+
+        <div class="pagination-controls" *ngIf="totalPages > 1">
+          <button mat-button (click)="previousPage()" [disabled]="currentPage === 1">
+            <mat-icon>chevron_left</mat-icon> Previous
+          </button>
+          <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+          <button mat-button (click)="nextPage()" [disabled]="currentPage === totalPages">
+            Next <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <ng-template #noFavorites>
+        <div class="no-favorites">
+          <p>You haven't favorited any articles yet.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>
+
+

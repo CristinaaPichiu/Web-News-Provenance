@@ -6,7 +6,13 @@ from datetime import datetime
 import requests
 from dotenv import load_dotenv
 from matplotlib.image import thumbnail
-
+from collections import Counter
+from datetime import datetime, timedelta
+import logging
+from typing import List, Dict, Any, Tuple
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from models.graph_builder import GraphBuilder
 load_dotenv()
 
@@ -17,86 +23,288 @@ class SPARQLService:
         self.service = service
         self.options = options
 
-    def get_recommendations(self, user_history):
+    def get_recommendations(self, user_history: List[str], max_recommendations: int = 10) -> List[Dict[str, Any]]:
         """
-        Generates article recommendations based on the user's history.
+        Generates personalized article recommendations based on user's reading history.
+        Supports articles in any language.
+
         Args:
-            user_history: List of article URLs from the user's history.
+            user_history: List of article URLs from user's history
+            max_recommendations: Maximum number of recommendations to return
+
         Returns:
-            List of recommended articles.
+            List of recommended articles with similarity scores
         """
         logging.info(f"Generating recommendations for user history: {user_history}")
+
+        # Get viewed articles details
         viewed_articles = []
         for url in user_history:
             results = self.get_article_by_url(url)
             if results:
                 viewed_articles.append(results)
-        search_filters = self.get_most_viewed_details(viewed_articles)
-        recommended_articles, match_type = self.advanced_search(**search_filters)
-        filtered_recommendations = [article for article in recommended_articles if article['url'] not in user_history]
-        return filtered_recommendations
-        return recommended_articles
 
-    def get_most_viewed_details(self, viewed_articles):
+        if not viewed_articles:
+            return []
+
+        # Extract user preferences
+        preferences = self._extract_user_preferences(viewed_articles)
+
+        # Get candidate articles using advanced search
+        recommended_articles = self._get_candidate_articles(preferences)
+
+        # Rank and filter recommendations
+        final_recommendations = self._rank_articles(
+            viewed_articles,
+            recommended_articles,
+            preferences,
+            user_history,
+            max_recommendations
+        )
+
+        return final_recommendations
+
+    def _extract_user_preferences(self, viewed_articles: List[Dict]) -> Dict[str, Any]:
         """
-        Extracts the most viewed details from a list of articles.
-        Args:
-            viewed_articles: List of viewed articles.
-        Returns:
-            Search filters based on the most viewed details.
+        Extracts user preferences from viewing history.
+        Language preference is not enforced to allow multilingual recommendations.
         """
-        logging.info(f"Extracting most viewed details from articles: {viewed_articles}")
-        most_viewed_details = {
-            "keywords": None,
-            "wordcount_min": None,
-            "wordcount_max": None,
-            "inLanguage": None,
-            "author_name": None,
-            "publisher": None,
-            "datePublished_min": None,
-            "datePublished_max": None}
+        preferences = {
+            'keywords': [],
+            'wordcount_min': None,
+            'wordcount_max': None,
+            'author_name': None,
+            'publisher': None,
+            'datePublished_min': None,
+            'datePublished_max': None
+        }
 
         word_counts = []
         dates_published = []
         keywords = []
         authors = []
         publishers = []
-        languages = []
 
         for article in viewed_articles:
-            if article.get("wordCount"):
-                word_counts.append(article["wordCount"])
-            if article.get("datePublished"):
-                dates_published.append(article["datePublished"])
-            if article.get("keywords"):
-                keywords.extend(article["keywords"])
-            if article.get("author"):
-                authors.extend([author["name"] for author in article["author"] if author.get("name")])
-            if article.get("publisher"):
-                publishers.extend([publisher["name"] for publisher in article["publisher"] if publisher.get("name")])
-            if article.get("inLanguage"):
-                languages.append(article["inLanguage"])
+            # Collect word counts
+            if article.get('wordCount'):
+                word_counts.append(article['wordCount'])
 
+            # Collect publish dates
+            if article.get('datePublished'):
+                try:
+                    date = datetime.fromisoformat(article['datePublished'].replace('Z', '+00:00'))
+                    dates_published.append(date)
+                except ValueError:
+                    logging.error(f"Invalid date format: {article['datePublished']}")
+
+            # Collect keywords (maintaining original language)
+            if article.get('keywords'):
+                if isinstance(article['keywords'], list):
+                    keywords.extend(article['keywords'])
+                elif isinstance(article['keywords'], str):
+                    keywords.extend(article['keywords'].split())
+
+            # Collect authors
+            if article.get('author'):
+                if isinstance(article['author'], list):
+                    authors.extend([author['name'] for author in article['author'] if author.get('name')])
+                elif isinstance(article['author'], dict):
+                    if article['author'].get('name'):
+                        authors.append(article['author']['name'])
+
+            # Collect publishers
+            if article.get('publisher'):
+                if isinstance(article['publisher'], list):
+                    publishers.extend([pub['name'] for pub in article['publisher'] if pub.get('name')])
+                elif isinstance(article['publisher'], dict):
+                    if article['publisher'].get('name'):
+                        publishers.append(article['publisher']['name'])
+
+        # Process collected data
         if word_counts:
-            most_viewed_details["wordcount_min"] = min(word_counts)
-            most_viewed_details["wordcount_max"] = max(word_counts)
+            preferences['wordcount_min'] = int(np.percentile(word_counts, 25))
+            preferences['wordcount_max'] = int(np.percentile(word_counts, 75))
+
         if dates_published:
-            most_viewed_details["datePublished_min"] = min(dates_published)
-            most_viewed_details["datePublished_max"] = max(dates_published)
+            preferences['datePublished_min'] = min(dates_published)
+            preferences['datePublished_max'] = max(dates_published)
+
         if keywords:
-            most_viewed_details["keywords"] = [keyword for keyword, _ in Counter(keywords).most_common(10)]
-            #merge keywords separated by space
-            most_viewed_details["keywords"] = " ".join(most_viewed_details["keywords"])
+            # Get most common keywords (preserve original language)
+            keyword_counter = Counter(keywords)
+            preferences['keywords'] = ' '.join([k for k, _ in keyword_counter.most_common(10)])
+
         if authors:
-            most_viewed_details["author_name"] = Counter(authors).most_common(1)[0][0]
+            # Get most common author
+            preferences['author_name'] = Counter(authors).most_common(1)[0][0]
+
         if publishers:
-            most_viewed_details["publisher"] = Counter(publishers).most_common(1)[0][0]
-        if languages:
-            most_viewed_details["inLanguage"] = Counter(languages).most_common(1)[0][0]
+            # Get most common publisher
+            preferences['publisher'] = Counter(publishers).most_common(1)[0][0]
 
-        return most_viewed_details
+        return preferences
 
+    def _get_candidate_articles(self, preferences: Dict[str, Any]) -> List[Dict]:
+        """
+        Gets candidate articles using advanced search function.
+        No language restriction applied.
+        """
+        # Try exact matches first
+        articles, match_type = self.advanced_search(
+            keywords=preferences['keywords'],
+            wordcount_min=preferences['wordcount_min'],
+            wordcount_max=preferences['wordcount_max'],
+            author_name=preferences['author_name'],
+            publisher=preferences['publisher'],
+            datePublished_min=preferences['datePublished_min'],
+            datePublished_max=preferences['datePublished_max'],
+            inLanguage=None  # No language restriction
+        )
 
+        if not articles:
+            # Try with relaxed criteria
+            relaxed_preferences = preferences.copy()
+            # Remove some constraints to get more results
+            relaxed_preferences['author_name'] = None
+            relaxed_preferences['publisher'] = None
+
+            articles, match_type = self.advanced_search(
+                keywords=relaxed_preferences['keywords'],
+                wordcount_min=relaxed_preferences['wordcount_min'],
+                wordcount_max=relaxed_preferences['wordcount_max'],
+                datePublished_min=relaxed_preferences['datePublished_min'],
+                datePublished_max=relaxed_preferences['datePublished_max'],
+                inLanguage=None  # No language restriction
+            )
+
+        return articles
+
+    def _rank_articles(
+            self,
+            viewed_articles: List[Dict],
+            candidate_articles: List[Dict],
+            preferences: Dict[str, Any],
+            user_history: List[str],
+            max_recommendations: int
+    ) -> List[Dict]:
+        """
+        Ranks and filters candidate articles.
+        Uses character-level TF-IDF for language-agnostic similarity.
+        """
+        if not candidate_articles:
+            return []
+
+        # Calculate content similarity using character-level n-grams
+        vectorizer = TfidfVectorizer(
+            analyzer='char',
+            ngram_range=(3, 5),  # Use character trigrams to pentagrams
+            stop_words=None  # Don't use stop words to keep language-agnostic
+        )
+
+        # Prepare text content
+        viewed_texts = []
+        candidate_texts = []
+
+        for article in viewed_articles:
+            text = []
+            if article.get('headline'):
+                text.append(article['headline'])
+            if article.get('abstract'):
+                text.append(article['abstract'])
+            if article.get('keywords'):
+                if isinstance(article['keywords'], list):
+                    text.extend(article['keywords'])
+                elif isinstance(article['keywords'], str):
+                    text.extend(article['keywords'].split())
+            viewed_texts.append(' '.join(text))
+
+        for article in candidate_articles:
+            text = []
+            if article.get('headline'):
+                text.append(article['headline'])
+            if article.get('abstract'):
+                text.append(article['abstract'])
+            if article.get('keywords'):
+                if isinstance(article['keywords'], list):
+                    text.extend(article['keywords'])
+                elif isinstance(article['keywords'], str):
+                    text.extend(article['keywords'].split())
+            candidate_texts.append(' '.join(text))
+
+        try:
+            # Calculate TF-IDF and similarity
+            tfidf_matrix = vectorizer.fit_transform(viewed_texts + candidate_texts)
+            similarity_matrix = cosine_similarity(tfidf_matrix)
+
+            # Calculate average similarity to viewed articles
+            num_viewed = len(viewed_texts)
+            similarity_scores = similarity_matrix[num_viewed:, :num_viewed].mean(axis=1)
+
+            # Combine with metadata similarity
+            scored_articles = []
+            for idx, article in enumerate(candidate_articles):
+                if article.get('url') not in user_history:
+                    article_copy = article.copy()
+                    article_copy['similarity_score'] = float(similarity_scores[idx])
+
+                    # Add metadata matching score
+                    metadata_score = self._calculate_metadata_similarity(article, preferences)
+
+                    # Combine scores (70% content, 30% metadata)
+                    article_copy['final_score'] = (
+                            0.7 * article_copy['similarity_score'] +
+                            0.3 * metadata_score
+                    )
+
+                    scored_articles.append(article_copy)
+
+            # Sort by final score
+            ranked_articles = sorted(
+                scored_articles,
+                key=lambda x: x.get('final_score', 0),
+                reverse=True
+            )
+
+            return ranked_articles[:max_recommendations]
+
+        except Exception as e:
+            logging.error(f"Error in ranking articles: {e}")
+            return []
+
+    def _calculate_metadata_similarity(self, article: Dict, preferences: Dict) -> float:
+        """
+        Calculates similarity score based on metadata matching.
+        Language-agnostic implementation.
+        """
+        score = 0.0
+
+        # Author match
+        if article.get('author') and preferences.get('author_name'):
+            if isinstance(article['author'], list):
+                if any(author.get('name') == preferences['author_name'] for author in article['author']):
+                    score += 0.3
+            elif isinstance(article['author'], dict):
+                if article['author'].get('name') == preferences['author_name']:
+                    score += 0.3
+
+        # Publisher match
+        if article.get('publisher') and preferences.get('publisher'):
+            if isinstance(article['publisher'], list):
+                if any(pub.get('name') == preferences['publisher'] for pub in article['publisher']):
+                    score += 0.3
+            elif isinstance(article['publisher'], dict):
+                if article['publisher'].get('name') == preferences['publisher']:
+                    score += 0.3
+
+        # Word count range match
+        if (article.get('wordCount') and
+                preferences.get('wordcount_min') and
+                preferences.get('wordcount_max')):
+            if (preferences['wordcount_min'] <= article['wordCount'] <= preferences['wordcount_max']):
+                score += 0.4
+
+        return score
 
     def create_graph(self, url):
         """
@@ -1058,3 +1266,22 @@ class SPARQLService:
         except Exception as e:
             logging.error(f"Error deleting article by URL: {e}")
             return False, f"Error: {str(e)}"
+
+    def get_all_data(self):
+        """
+        Retrieves all data from the Fuseki dataset.
+        Returns:
+            All data from the dataset.
+        """
+        try:
+            query = """
+            SELECT ?s ?p ?o
+            WHERE {
+              ?s ?p ?o
+            }
+            """
+            results = self.execute_sparql_query(query)
+            return results
+        except Exception as e:
+            logging.error(f"Error retrieving all data: {e}")
+            return None

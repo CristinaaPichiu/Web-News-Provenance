@@ -125,3 +125,15 @@ def delete_article_by_url():
     if success:
         return jsonify({"message": message}), 200
     return jsonify({"message": "Failed", "error": message}), 500
+
+@article_blueprint.route('/data', methods=['GET'])
+def get_all_data():
+    """
+    Retrieves all data from the Fuseki dataset.
+    Returns:
+        List of data in JSON-LD format.
+    """
+    results = sparql_service.get_all_data()
+    if results:
+        return jsonify({"message": "Success", "data": results}), 200
+    return jsonify({"message": "No data found"}), 404

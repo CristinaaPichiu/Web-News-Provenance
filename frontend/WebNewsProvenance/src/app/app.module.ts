@@ -35,6 +35,8 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { RecommendedArticlesComponent } from './components/recommended-articles/recommended-articles.component';
 import { GraphVisualizationComponent } from './components/graph-visualization/graph-visualization.component';
 import { FormsModule } from '@angular/forms';
+import { FavoriteArticlesComponent } from './components/favorite-articles/favorite-articles.component';
+import {MatLegacyButtonModule} from "@angular/material/legacy-button";
 
 
 @NgModule({
@@ -54,7 +56,8 @@ import { FormsModule } from '@angular/forms';
     CreateArticleComponent,
     HistoryCardComponent,
     RecommendedArticlesComponent,
-    GraphVisualizationComponent
+    GraphVisualizationComponent,
+    FavoriteArticlesComponent
   ],
   imports: [
     BrowserModule,

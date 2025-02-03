@@ -11,7 +11,7 @@ import { UserCardComponent } from './components/user-card/user-card.component';
 import { ShowUsersComponent } from './components/show-users/show-users.component';
 import { CreateArticleComponent } from './components/create-article/create-article.component';
 import {GraphVisualizationComponent} from "./components/graph-visualization/graph-visualization.component";
-
+import {FavoriteArticlesComponent} from "./components/favorite-articles/favorite-articles.component";
 
 const routes: Routes = [
   {
@@ -57,6 +57,10 @@ const routes: Routes = [
   {
     path: 'graph-view',
     component: GraphVisualizationComponent
+  },
+  {
+    path:'favorites',
+    component: FavoriteArticlesComponent
   }
 ];
 
