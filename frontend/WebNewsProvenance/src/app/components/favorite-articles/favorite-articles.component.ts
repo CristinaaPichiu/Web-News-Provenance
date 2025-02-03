@@ -1,7 +1,8 @@
 import {Component, OnInit, Inject, Renderer2} from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http'
 import {DOCUMENT} from "@angular/common";
-
+import {ArticleDetailsModalComponent} from "../article-details-modal/article-details-modal.component";
+import {MatDialog} from "@angular/material/dialog";
 
 interface Article {
   id: string;
@@ -20,20 +21,17 @@ interface Article {
   styleUrls: ['./favorite-articles.component.scss']
 })
 export class FavoriteArticlesComponent implements OnInit {
-
+  jsonLd: any;
   articles: Article[] = [];
   currentPage: number = 1;
   itemsPerPage: number = 6;
   favoritesApiUrl: string = 'http://127.0.0.1:5000/user/favorites';
 
 
-  constructor(private http: HttpClient, @Inject(DOCUMENT) private document: Document, private renderer: Renderer2) {}
-
+  constructor(private http: HttpClient, @Inject(DOCUMENT) private document: Document, private renderer: Renderer2, private dialog: MatDialog) {}
 
   ngOnInit(): void {
     this.fetchFavorites();
-
-    // Add this method call
     this.addJsonLdForArticles();
     this.addJsonLd();
   }
@@ -123,7 +121,6 @@ export class FavoriteArticlesComponent implements OnInit {
             author: item.author[0]?.name
           }));
           this.addJsonLdForArticles();
-          // Update current page if it would be empty after deletion
           if (this.currentPage > this.totalPages) {
             this.currentPage = Math.max(1, this.totalPages);
           }
@@ -131,10 +128,8 @@ export class FavoriteArticlesComponent implements OnInit {
       },
       error: error => {
         if (error.status === 404) {
-          // Specifically handle 404 - No favorites found
-          this.articles = []; // Ensure articles is an empty array
+          this.articles = [];
         } else {
-          // Handle other types of errors
           console.error('Error fetching favorites:', error);
         }
       }
@@ -150,10 +145,7 @@ export class FavoriteArticlesComponent implements OnInit {
 
     this.http.delete(this.favoritesApiUrl, { headers, body }).subscribe({
       next: () => {
-        // Remove article from local array
         this.articles = this.articles.filter(article => article.url !== articleUrl);
-
-        // If current page would be empty after removal, go to previous page
         if (this.paginatedArticles.length === 0 && this.currentPage > 1) {
           this.currentPage--;
         }
@@ -183,6 +175,28 @@ export class FavoriteArticlesComponent implements OnInit {
     if (this.currentPage > 1) {
       this.currentPage--;
     }
+  }
+
+  openDialog(article: Article) {
+    console.log("Search: " + article);
+    const jwtToken = localStorage.getItem('access_token');
+    if (!jwtToken) {
+      console.error('User not authenticated');
+      return;
+    }
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${jwtToken}`);
+    this.http.post('http://127.0.0.1:5000/user/history', { url: article.url }, { headers }).subscribe({
+      next: () => {
+        this.dialog.open(ArticleDetailsModalComponent, {
+          width: '150vw',
+          height: '85vh',
+          data: { article: article }
+        });
+      },
+      error: error => {
+        console.error('Error sending history request:', error);
+      }
+    });
   }
 
 }

@@ -99,6 +99,7 @@
               object-fit: cover;
               transition: transform 0.3s ease-in-out;
             }
+
           }
 
           mat-card-content {
@@ -170,9 +171,9 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
           }
         }
-      
+
         }
-    
+
       }
       .action-container {
         display: flex;
@@ -180,22 +181,45 @@
         align-items: center;
         padding: 8px 16px;
       }
-      
+
       .type-label {
-        padding: 2px 8px; // făcut mai mic
-        border-radius: 12px; // ajustat pentru dimensiunea mai mică
+        padding: 2px 8px;
+        border-radius: 12px;
         display: inline-block;
         color: white;
-        font-size: 12px; // făcut mai mic
+        font-size: 12px;
         background-color: #6b7280;
-      
+
         &.exact {
           background-color: #22c55e;
         }
-      
+
         &.partial {
           background-color: #eab308;
         }
       }
+
+    .favorite-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.9);
+
+      .mat-icon {
+        color: #666;
+        transition: color 0.2s ease;
+
+        &.active {
+          color: #ff4081;
+        }
+      }
+
+      &:hover {
+        background: rgba(255, 255, 255, 1);
+        .mat-icon {
+          transform: scale(1.1);
+        }
+      }
+    }
     }
   }

@@ -11,7 +11,7 @@ import { DeleteUserDialogComponent } from '../delete-user-dialog/delete-user-dia
 export class UserCardComponent {
   @Input() user: any;
   @Output() edit = new EventEmitter<any>();
-  @Output() delete = new EventEmitter<string>(); // Adăugat @Output pentru delete
+  @Output() delete = new EventEmitter<string>();
 
 
   constructor(private dialog: MatDialog) {}
@@ -24,7 +24,7 @@ export class UserCardComponent {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        this.delete.emit(this.user.id); // Emiterea evenimentului pentru ștergere
+        this.delete.emit(this.user.id);
       }
     });
   }

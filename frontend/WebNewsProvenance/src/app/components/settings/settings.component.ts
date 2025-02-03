@@ -33,7 +33,7 @@ export class SettingsComponent implements OnInit {
 
   }
   loadUserDetails(): void {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('access_token');
     if (token) {
 
     } else {
@@ -42,7 +42,7 @@ export class SettingsComponent implements OnInit {
   }
 
   loadUserProfile(): void {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('access_token');
 
     if (token) {
 

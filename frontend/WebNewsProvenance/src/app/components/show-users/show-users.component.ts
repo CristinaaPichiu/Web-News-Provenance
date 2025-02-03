@@ -24,7 +24,7 @@ export class ShowUsersComponent implements OnInit {
 
   deleteUser(userId: string) {
   this.userService.deleteUser(userId).subscribe(() => {
-    this.users = this.users.filter(user => user.id !== userId); // Elimină utilizatorul din UI
+    this.users = this.users.filter(user => user.id !== userId);
   }, error => {
     console.error('Error deleting user:', error);
   });

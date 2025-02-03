@@ -100,7 +100,6 @@
   display: none;
 }
 
-// Responsive adjustments
 @media (max-width: 1200px) {
   .favorites-container .articles-grid {
     grid-template-columns: repeat(2, 1fr);

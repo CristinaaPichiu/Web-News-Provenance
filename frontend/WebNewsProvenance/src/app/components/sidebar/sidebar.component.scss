@@ -58,6 +58,17 @@ mat-nav-list {
   border: none; /* Elimină bordurile */
 }
 
+.sidenav-container {
+  padding: 0; /* Elimină padding-ul */
+  overflow: hidden; /* Ascunde overflow-ul */
+  overflow-y: scroll; /* Allow vertical scrolling without scrollbar */
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none;  /* For Internet Explorer and Edge */
+}
+
+.sidenav-container::-webkit-scrollbar {
+  display: none;
+}
 
 @media (width <= 768px) {
   .sidenav {

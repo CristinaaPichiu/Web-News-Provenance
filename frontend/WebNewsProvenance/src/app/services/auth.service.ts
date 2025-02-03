@@ -1,4 +1,3 @@
-// src/app/services/auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
@@ -9,7 +8,7 @@ import { HttpHeaders } from '@angular/common/http';
   providedIn: 'root'
 })
 export class AuthService {
-  private roleSource = new BehaviorSubject<string>(''); // Stocare pentru rol
+  private roleSource = new BehaviorSubject<string>('');
   public role = this.roleSource.asObservable();
   private baseUrl = 'http://localhost:5000/auth';
 
@@ -29,7 +28,7 @@ export class AuthService {
   register(first_name: string, last_name: string, email: string, password: string): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/register`, { first_name, last_name, email, password }).pipe(
       tap(response => {
-        localStorage.setItem('access_token', response.access_token); // Salvează token-ul dacă înregistrarea este direct urmată de autentificare
+        localStorage.setItem('access_token', response.access_token);
       }),
       catchError(error => {
         let message = "Registration failed. Please check your details.";
@@ -78,21 +77,21 @@ export class AuthService {
   }
 
   updateUser(userId: string, userData: any): Observable<any> {
-    const token = localStorage.getItem('access_token'); // Asigură-te că salvezi tokenul la login
+    const token = localStorage.getItem('access_token');
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     return this.http.put(`${this.baseUrl}/update-user/${userId}`, userData, { headers });
   }
 
   deleteUser(userId: string): Observable<any> {
-    const token = localStorage.getItem('access_token'); // Preia tokenul JWT
+    const token = localStorage.getItem('access_token');
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     return this.http.delete(`${this.baseUrl}/delete-user/${userId}`, { headers });
   }
 
   changePassword(currentPassword: string, newPassword: string): Observable<any> {
-    const token = localStorage.getItem('access_token'); // Get the JWT token from localStorage
+    const token = localStorage.getItem('access_token');
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     const payload = { currentPassword, newPassword };
 

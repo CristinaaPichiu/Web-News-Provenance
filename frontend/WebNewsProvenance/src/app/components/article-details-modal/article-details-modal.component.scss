@@ -2,27 +2,24 @@ mat-dialog-content {
     padding: 20px;
     max-height: 70vh;
     overflow-y: auto;
-  
-    // Container pentru etichete -> Toate pe o singură linie
+
     .article-meta-container {
       display: flex;
-      justify-content: space-between; // Spațiere uniformă
+      justify-content: space-between;
       align-items: center;
-      flex-wrap: nowrap; // Nu permite trecerea pe linie nouă
+      flex-wrap: nowrap;
       gap: 15px;
       margin-bottom: 15px;
       flex-direction: row;
     }
-  
-    // Elimină coloanele anterioare, acum toate sunt inline
+
     .article-meta-column {
       display: flex;
       flex-direction: row;
       gap: 15px;
       flex-wrap: nowrap;
     }
-  
-    // Stilizare generală pentru etichete
+
     .label {
       font-size: 0.9em;
       font-weight: bold;
@@ -30,17 +27,16 @@ mat-dialog-content {
       border-radius: 5px;
       color: white;
       width: fit-content;
-      white-space: nowrap; // Previne trecerea pe linie nouă
+      white-space: nowrap;
     }
-  
-    // Culori pastel pentru etichete
-    .author-label { background-color: #f4b56a; }  
-    .date-label { background-color: #90c5f0; }  
-    .type-label { background-color: #8ed19d; }  
-    .language-label { background-color: #f4b56a; } 
-    .wordcount-label { background-color: #90c5f0;  } 
-    .publisher-label { background-color: #8ed19d;  } 
-  
+
+    .author-label { background-color: #f4b56a; }
+    .date-label { background-color: #90c5f0; }
+    .type-label { background-color: #8ed19d; }
+    .language-label { background-color: #f4b56a; }
+    .wordcount-label { background-color: #90c5f0;  }
+    .publisher-label { background-color: #8ed19d;  }
+
     .abstract {
       font-style: italic;
       color: #555;
@@ -49,7 +45,7 @@ mat-dialog-content {
       padding: 10px;
       border-radius: 5px;
     }
-  
+
     .article-body {
       line-height: 1.6;
       color: #444;
@@ -57,18 +53,18 @@ mat-dialog-content {
       padding: 15px;
       border-radius: 5px;
       font-size: 1.1em;
-  
+
       p {
         margin-bottom: 15px;
       }
     }
   }
-  
+
   mat-dialog-actions {
     display: flex;
     justify-content: center;
     padding: 15px;
-  
+
     button {
       background: #90c5f0;
       color: white;
@@ -76,10 +72,10 @@ mat-dialog-content {
       padding: 8px 15px;
       border-radius: 5px;
       transition: 0.3s;
-  
+
       &:hover {
         background: #1565c0;
       }
     }
   }
-  
+

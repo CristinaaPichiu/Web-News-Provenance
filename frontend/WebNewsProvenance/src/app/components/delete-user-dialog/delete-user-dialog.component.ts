@@ -17,6 +17,6 @@ export class DeleteUserDialogComponent {
   }
 
   onConfirm(): void {
-    this.dialogRef.close(true); // Trimite "true" la închidere dacă se confirmă ștergerea
+    this.dialogRef.close(true);
   }
 }
