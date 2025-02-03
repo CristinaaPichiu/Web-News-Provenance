@@ -26,70 +26,79 @@ export class AuthService {
     );
   }
 
-register(first_name: string, last_name: string, email: string, password: string): Observable<any> {
-  return this.http.post<any>(`${this.baseUrl}/register`, { first_name, last_name, email, password }).pipe(
-    tap(response => {
-      localStorage.setItem('access_token', response.access_token); // Salvează token-ul dacă înregistrarea este direct urmată de autentificare
-    }),
-    catchError(error => {
-      let message = "Registration failed. Please check your details.";
-      if (error.error instanceof ErrorEvent) {
-        message = "An unexpected error occurred.";
-      } else if (error.status === 409) {
-        message = "Email already in use";
-      } else if (error.error?.message) {
-        message = error.error.message;
-      }
-      return throwError(() => new Error(message));
-    })
-  );
-}
+  register(first_name: string, last_name: string, email: string, password: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/register`, { first_name, last_name, email, password }).pipe(
+      tap(response => {
+        localStorage.setItem('access_token', response.access_token); // Salvează token-ul dacă înregistrarea este direct urmată de autentificare
+      }),
+      catchError(error => {
+        let message = "Registration failed. Please check your details.";
+        if (error.error instanceof ErrorEvent) {
+          message = "An unexpected error occurred.";
+        } else if (error.status === 409) {
+          message = "Email already in use";
+        } else if (error.error?.message) {
+          message = error.error.message;
+        }
+        return throwError(() => new Error(message));
+      })
+    );
+  }
 
-resetPassword(token: string, newPassword: string): Observable<any> {
-  return this.http.post(`${this.baseUrl}/reset-password/${token}`, { new_password: newPassword });
-}
+  resetPassword(token: string, newPassword: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/reset-password/${token}`, { new_password: newPassword });
+  }
 
-requestPasswordReset(email: string): Observable<any> {
-  return this.http.post(`${this.apiUrl}/request-reset-email`, { email });
-}
+  requestPasswordReset(email: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/request-reset-email`, { email });
+  }
 
 
-loadUserRole() {
-  const token = localStorage.getItem('access_token');
-  if (!token) return;
+  loadUserRole() {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
 
-  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-  this.http.get<{ role: string }>(`${this.baseUrl}/get-user-role`, { headers }).subscribe(
-    response => this.roleSource.next(response.role),
-    error => console.error("Failed to load user role", error)
-  );
-}
+    this.http.get<{ role: string }>(`${this.baseUrl}/get-user-role`, { headers }).subscribe(
+      response => this.roleSource.next(response.role),
+      error => console.error("Failed to load user role", error)
+    );
+  }
 
-getRole(): Observable<string> {
-  return this.role;
-}
+  getRole(): Observable<string> {
+    return this.role;
+  }
 
-getUsers(): Observable<any[]> {
-  const token = localStorage.getItem('access_token');
-  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  getUsers(): Observable<any[]> {
+    const token = localStorage.getItem('access_token');
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-  return this.http.get<any[]>(`${this.baseUrl}/get-users`, { headers });
-}
+    return this.http.get<any[]>(`${this.baseUrl}/get-users`, { headers });
+  }
 
-updateUser(userId: string, userData: any): Observable<any> {
-  const token = localStorage.getItem('access_token'); // Asigură-te că salvezi tokenul la login
-  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  updateUser(userId: string, userData: any): Observable<any> {
+    const token = localStorage.getItem('access_token'); // Asigură-te că salvezi tokenul la login
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-  return this.http.put(`${this.baseUrl}/update-user/${userId}`, userData, { headers });
-}
+    return this.http.put(`${this.baseUrl}/update-user/${userId}`, userData, { headers });
+  }
 
-deleteUser(userId: string): Observable<any> {
-  const token = localStorage.getItem('access_token'); // Preia tokenul JWT
-  const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  deleteUser(userId: string): Observable<any> {
+    const token = localStorage.getItem('access_token'); // Preia tokenul JWT
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-  return this.http.delete(`${this.baseUrl}/delete-user/${userId}`, { headers });
-}
+    return this.http.delete(`${this.baseUrl}/delete-user/${userId}`, { headers });
+  }
+
+  changePassword(currentPassword: string, newPassword: string): Observable<any> {
+    const token = localStorage.getItem('access_token'); // Get the JWT token from localStorage
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    const payload = { currentPassword, newPassword };
+
+    return this.http.post(`${this.baseUrl}/change-password`, payload, { headers });
+  }
+
 
 
 }

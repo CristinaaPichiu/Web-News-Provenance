@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt
 from itsdangerous import URLSafeTimedSerializer
 from flask import current_app as app
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from api.services.email_service import send_welcome_email
 from databases.db_postgresql_conn import connect
@@ -238,5 +239,32 @@ def update_user(user_id):
     finally:
         session.close()
 
+@auth_blueprint.route('/change-password', methods=['POST'])
+@jwt_required()
+def change_password():
+    session, _ = connect()
+    current_user_id = get_jwt_identity()  # Fetch the identity from JWT
+    user_details = session.query(User).filter_by(email=current_user_id).first()
 
+    if not user_details:
+        return jsonify({"message": "User not found"}), 404
+
+    # Extract passwords from the request
+    current_password = request.json.get('currentPassword')
+    new_password = request.json.get('newPassword')
+
+    # Check the current password
+    if not check_password_hash(user_details.password_hash, current_password):
+        return jsonify({"error": "Current password is incorrect"}), 401
+
+    # Update to the new password
+    try:
+        user_details.password_hash = generate_password_hash(new_password)
+        session.commit()
+        return jsonify({"message": "Password updated successfully"}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        session.close()
 
