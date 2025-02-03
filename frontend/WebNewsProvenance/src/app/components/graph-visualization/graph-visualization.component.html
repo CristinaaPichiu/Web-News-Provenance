@@ -1,15 +1,15 @@
-<div class="page-container">
+<div class="page-container" vocab="http://schema.org/" typeof="WebPage">
     <div class="main-container">
         <app-sidebar></app-sidebar>
 
         <div class="content flex">
             <!-- Graph Container (75%) -->
-            <div class="graph-container">
+            <div class="page-container" vocab="http://schema.org/" typeof="WebPage">
                 <!-- Graph Container -->
-                <div #svgContainer class="graph"></div>
+                <div #svgContainer class="graph" property="contentUrl"></div>
 
                 <!-- Controls (Absolutely Positioned Over SVG) -->
-                <div class="graph-controls">
+                <div class="graph-controls" property="associatedMedia" typeof="MediaObject">
                     <button mat-icon-button (click)="zoomIn()">
                         <mat-icon>zoom_in</mat-icon>
                     </button>
@@ -25,9 +25,9 @@
 
 
             <!-- Filters & Search Section (25%) -->
-            <div class="filters-section">
+            <div class="filters-section" property="mainEntity" typeof="Collection">
                 <div class="p-4 bg-white border-b">
-                    <h3 class="text-lg font-semibold mb-2">Node Types</h3>
+                    <h3 class="text-lg font-semibold mb-2" property="name">Node Types</h3>
                     <div class="flex justify-end mb-2 filters-button">
                         <button (click)="toggleAllFilters()" class="control-button">
                             {{ allFiltersSelected ? 'Uncheck All Filters' : 'Check All Filters' }}
@@ -63,7 +63,7 @@
 
                 <!-- Articles -->
                 <div class="p-4">
-                    <h3 class="text-lg font-semibold mb-2">Articles</h3>
+                    <h3 class="text-lg font-semibold mb-2" property="name">Articles</h3>
                     <div class="flex gap-2 mb-2 control-buttons">
                         <button (click)="selectAllArticles()" class="control-button">
                             Select All
@@ -72,7 +72,7 @@
                 </div>
 
                 <!-- Search -->
-                <div class="search-container p-4">
+                <div class="search-container p-4" property="potentialAction" typeof="SearchAction">
                     <input
                         #searchInput
                         [(ngModel)]="searchTerm"

@@ -11,7 +11,7 @@ export class ForgetPasswordComponent {
   constructor(private router: Router) {}
 
   goBack() {
-    this.router.navigate(['/login']); // Navighează înapoi la pagina de login sau oricare altă pagină
+    this.router.navigate(['/login']);
   }
 
 }

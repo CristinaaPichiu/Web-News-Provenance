@@ -15,6 +15,10 @@ export class SidebarComponent implements OnInit {
 
   constructor(private breakpointObserver: BreakpointObserver, private authService: AuthService) {}
 
+  logout(): void {
+    localStorage.removeItem('access_token');
+  }
+
   ngOnInit() {
     this.breakpointObserver.observe([
       Breakpoints.XSmall,
@@ -27,7 +31,6 @@ export class SidebarComponent implements OnInit {
       this.role = role;
     });
 
-    // Dacă utilizatorul este deja logat, preia rolul la inițializare
     this.authService.loadUserRole();
 
   }

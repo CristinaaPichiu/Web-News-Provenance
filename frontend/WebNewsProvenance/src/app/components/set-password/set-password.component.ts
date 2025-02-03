@@ -13,7 +13,7 @@ export class SetPasswordComponent implements OnInit {
   errorMessage: string = '';
   hidePassword = true;
   hideConfirmPassword = true;
-  token: string = ''; // Stocăm token-ul de resetare
+  token: string = '';
 
 
   constructor(
@@ -27,7 +27,7 @@ export class SetPasswordComponent implements OnInit {
   ngOnInit(): void {
 
     this.route.queryParams.subscribe(params => {
-      this.token = params['token']; 
+      this.token = params['token'];
     });
 
     this.setPasswordForm = this.fb.group({
@@ -67,10 +67,10 @@ export class SetPasswordComponent implements OnInit {
     }
 
     const newPassword = this.setPasswordForm.value.password;
-    
+
     this.authService.resetPassword(this.token, newPassword).subscribe({
       next: () => {
-        this.router.navigate(['/login']); 
+        this.router.navigate(['/login']);
       },
       error: (error) => {
         this.errorMessage = error.error.message || 'An error occurred';

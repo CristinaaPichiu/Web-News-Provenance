@@ -15,7 +15,7 @@ export class SearchService {
   advancedSearch(params: any): Observable<any> {
     let queryParams = new HttpParams();
     Object.keys(params).forEach(key => {
-      if (params[key]) { // Add only non-empty parameters
+      if (params[key]) {
         queryParams = queryParams.append(key, params[key]);
       }
     });

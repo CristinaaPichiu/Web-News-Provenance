@@ -1,4 +1,4 @@
-<h2>History</h2>
+<h2 property="name">History</h2>
 <div class="carousel-container" *ngIf="articles.length">
   <button mat-icon-button class="nav-button prev" (click)="previous()" [disabled]="currentIndex === 0">
     <mat-icon>chevron_left</mat-icon>
@@ -10,7 +10,7 @@
       <div *ngFor="let article of articles" class="article-card">
         <mat-card>
           <div class="card-image-container">
-            <img mat-card-image [src]="article.thumbnailUrl" alt="Article Image" />
+            <img mat-card-image [src]="article.thumbnailUrl" alt="Article Image" (click)="openDialog(article)"/>
               <button mat-icon-button class="favorite-button" (click)="toggleFavorite(article)">
                   <mat-icon [class.active]="article.isFavorite">
                       {{article.isFavorite ? 'favorite' : 'favorite_border'}}

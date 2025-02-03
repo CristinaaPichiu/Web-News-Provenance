@@ -131,3 +131,9 @@ mat-card-title {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+@media (max-width: 850px) {
+  .article-keywords-set {
+    display: none;
+  }
+}

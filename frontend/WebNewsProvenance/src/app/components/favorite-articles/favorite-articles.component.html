@@ -1,5 +1,5 @@
 <div class="page-container" vocab="http://schema.org/" typeof="WebPage">
-  <div class="main-container">
+    <div class="main-container" property="mainContentOfPage">
     <app-sidebar></app-sidebar>
     <div class="content" property="mainContentOfPage">
       <h2>Favorites</h2>
@@ -14,7 +14,7 @@
                 <img mat-card-image
                      [src]="article.thumbnailUrl"
                      alt="Article Image"
-                     property="image"/>
+                     property="image" (click)="openDialog(article)"/>
                 <button mat-icon-button class="favorite-button" (click)="removeFavorite(article.url)">
                   <mat-icon class="active">favorite</mat-icon>
                 </button>

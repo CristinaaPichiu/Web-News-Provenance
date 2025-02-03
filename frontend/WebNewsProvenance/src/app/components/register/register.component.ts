@@ -18,7 +18,7 @@ export class RegisterComponent {
 
   constructor(
     private formBuilder: FormBuilder,
-    private authService: AuthService, // Injectează AuthService
+    private authService: AuthService,
     private router: Router,
     @Inject(DOCUMENT) private document: Document,
     private renderer: Renderer2
@@ -56,7 +56,7 @@ export class RegisterComponent {
       const { first_name, last_name, email, password } = this.registerForm.value;
       this.authService.register(first_name, last_name, email, password).subscribe({
         next: () => {
-          this.router.navigate(['/dashboard']); // Redirecționează după înregistrare
+          this.router.navigate(['/dashboard']);
           console.log('Registration successful');
         },
         error: (error: Error) => {

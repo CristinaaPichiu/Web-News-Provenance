@@ -1,14 +1,14 @@
 .page-container {
   display: flex;
-  height: 96vh;
-  width: 99vw;
   align-items: stretch;
   background-color: white;
 }
 
 .main-container {
   display: flex;
-  flex-grow: 1;
+  flex-grow: 1; /* Se extinde pentru a umple spațiul disponibil */
+  height: 96vh;
+  width: 99vw;
 }
 
 .content {
@@ -32,18 +32,19 @@
 
 .graph{
   height: 85vh;
+  width: 75vw;
 }
 
 .graph-container {
   flex-grow: 3;
-  max-width: 80vw;
+  width: 75vw;
   position: relative;
 }
 
 
 .filters-section {
-  flex-grow: 1;
-  max-width: 15vw;
+  flex-grow: 2;
+  width: 20vw;
   background-color: white;
   padding: 16px;
   border-left: 1px solid #ddd;

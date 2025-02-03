@@ -37,8 +37,8 @@
           <mat-icon>settings</mat-icon>
         </a>
 
-        <div class="logout-wrapper">
-          <a mat-list-item routerLink="/logout" matTooltip="Logout">
+        <div class="logout-wrapper" (click)="logout()">
+          <a mat-list-item routerLink="/login" matTooltip="Logout">
             <mat-icon>exit_to_app</mat-icon>
           </a>
         </div>

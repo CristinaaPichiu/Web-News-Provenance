@@ -1,4 +1,5 @@
-import { Component, ElementRef, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, OnDestroy, Inject, Renderer2 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 
 interface RDFTriple {
@@ -37,23 +38,19 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
   private svg: SVGSVGElement | null = null;
   private mainGroup: SVGGElement | null = null;
 
-  // Graph Data
   private nodes: RDFNode[] = [];
   private links: RDFLink[] = [];
   private filteredNodes: RDFNode[] = [];
   private filteredLinks: RDFLink[] = [];
 
-  // Filters
   availableNodeTypes: string[] = [];
   selectedNodeTypes: { [key: string]: boolean } = {};
   articles: RDFNode[] = [];
   selectedArticles: { [key: string]: boolean } = {};
 
-  // Search
   searchTerm: string = '';
   searchResults: RDFNode[] = [];
 
-  // Zoom and Pan
   private currentZoom = 1;
   private viewboxX = 0;
   private viewboxY = 0;
@@ -61,28 +58,51 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
   private startPanX = 0;
   private startPanY = 0;
 
-  // Node Dragging
   private selectedNode: RDFNode | null = null;
   private isDragging = false;
   private dragStartX = 0;
   private dragStartY = 0;
 
-  // Node Highlighting
   private highlightedNodeId: string | null = null;
   private defaultOpacity = '1';
   private fadedOpacity = '0.2';
 
-  // Event Listeners
   private boundMouseMove: (e: MouseEvent) => void;
   private boundMouseUp: (e: MouseEvent) => void;
   private boundWheel: (e: WheelEvent) => void;
   private boundContextMenu: (e: Event) => void;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private renderer: Renderer2, @Inject(DOCUMENT) private document: Document) {
     this.boundMouseMove = this.handleMouseMove.bind(this);
     this.boundMouseUp = this.handleMouseUp.bind(this);
     this.boundWheel = this.handleWheel.bind(this);
     this.boundContextMenu = (e: Event) => e.preventDefault();
+  }
+
+  addJsonLdForPageAndElements() {
+    const jsonLd = {
+      "@context": "http://schema.org",
+      "@type": "WebPage",
+      "name": "Graph Visualization",
+      "mainEntity": {
+        "@type": "WebPageElement",
+        "name": "Graph Container",
+        "cssSelector": ".graph"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "http://example.com/search?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      }
+    };
+
+    const script = this.renderer.createElement('script');
+    script.type = 'application/ld+json';
+    script.text = JSON.stringify(jsonLd);
+    this.renderer.appendChild(this.document.head, script);
   }
 
   selectAllArticles() {
@@ -100,27 +120,19 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
   }
 
   public applyFilters() {
-    // First, filter nodes based on selected types
     this.filteredNodes = this.nodes.filter(node =>
         this.selectedNodeTypes[node.type]
     );
-
-    // Get the IDs of filtered nodes for quick lookup
     const filteredNodeIds = new Set(this.filteredNodes.map(node => node.id));
-
-    // Then filter links - only keep links where both source and target are in filtered nodes
     this.filteredLinks = this.links.filter(link =>
         filteredNodeIds.has(link.source) && filteredNodeIds.has(link.target)
     );
 
-    // Clear the existing graph
     if (this.mainGroup) {
       while (this.mainGroup.firstChild) {
         this.mainGroup.removeChild(this.mainGroup.firstChild);
       }
     }
-
-    // Recreate the graph with filtered data
     this.createGraphElements();
     this.updateGraph();
   }
@@ -129,6 +141,7 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
     console.log('Component initialized');
     this.initializeGraph();
     this.fetchData();
+    this.addJsonLdForPageAndElements();
   }
 
   fetchData() {
@@ -171,11 +184,9 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
 
     Object.values(response.data).forEach((value: any) => {
       if (Array.isArray(value) && value.length === 3) {
-        // Case 1: Transform array triples
         const [subject, predicate, object] = value;
 
         if (typeof subject === 'string' && typeof predicate === 'string' && object !== undefined) {
-          // Handle keywords as a special case if found
           if (predicate === "http://schema.org/keywords" && Array.isArray(object)) {
             object.forEach((keyword) => {
               triples.push({
@@ -185,7 +196,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
               });
             });
           } else {
-            // Regular triple transformation
             triples.push({
               s: { type: 'uri', value: subject },
               p: { type: 'uri', value: predicate },
@@ -205,7 +215,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
           typeof value.p.value === 'string' &&
           (typeof value.o.value === 'string' || Array.isArray(value.o.value))
       ) {
-        // Case 2: Handle already formatted RDF triples, including keyword arrays
         if (value.p.value === "http://schema.org/keywords" && Array.isArray(value.o.value)) {
           value.o.value.forEach((keyword: string) => {
             triples.push({
@@ -237,8 +246,7 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
   private processRDFData(rdfTriples: RDFTriple[]) {
     const nodeMap = new Map<string, RDFNode>();
     this.links = [];
-
-    // First pass: Create all nodes and collect relationships
+    this.nodes = [];
     const publisherRelations = new Set<string>();
     const authorRelations = new Set<string>();
     const headlineRelations = new Set<string>();
@@ -248,11 +256,9 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
     const jobTitleRelations = new Map<string, string>();
     const sectionRelations = new Map<string, string>();
 
-    // First collect all relationships
     rdfTriples.forEach(triple => {
       const predicate = triple.p.value.toLowerCase();
 
-      // Track headlines (articles)
       if (predicate.includes('headline')) {
         headlineRelations.add(triple.s.value);
         if (!nodeMap.has(triple.s.value)) {
@@ -293,7 +299,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       }
 
 
-      // Track author nationalities
       if (predicate.includes('nationality')) {
         const nationalityId = `nationality_${triple.o.value}`;
         if (!nodeMap.has(nationalityId)) {
@@ -312,7 +317,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Track job titles
       if (predicate.includes('jobtitle')) {
         const jobTitleId = `job_${triple.o.value}`;
         if (!nodeMap.has(jobTitleId)) {
@@ -331,7 +335,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Track article sections
       if (predicate.includes('articlesection')) {
         const sectionId = `section_${triple.o.value}`;
         if (!nodeMap.has(sectionId)) {
@@ -350,7 +353,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Track publisher relationships
       if (predicate.includes('publisher')) {
         publisherRelations.add(triple.o.value);
         this.links.push({
@@ -360,7 +362,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Track author relationships
       if (predicate.includes('author')) {
         authorRelations.add(triple.o.value);
         this.links.push({
@@ -370,12 +371,10 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Track names for publishers and authors
       if (predicate.includes('name')) {
         nameRelations.set(triple.s.value, triple.o.value);
       }
 
-      // Handle keywords
       if (predicate.includes('keywords')) {
         const keywordId = `keyword_${triple.o.value}`;
         if (!nodeMap.has(keywordId)) {
@@ -394,7 +393,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
         });
       }
 
-      // Create basic nodes for any remaining URIs
       if (!nodeMap.has(triple.s.value)) {
         nodeMap.set(triple.s.value, {
           id: triple.s.value,
@@ -416,7 +414,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Second pass: Assign correct types based on relationships
     nodeMap.forEach((node, id) => {
       if (headlineRelations.has(id)) {
         node.type = 'Article';
@@ -434,16 +431,13 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Convert nodeMap to array
     this.nodes = Array.from(nodeMap.values());
 
-    // Initialize node type filters
     this.availableNodeTypes = Array.from(new Set(this.nodes.map(node => node.type))).sort();
     this.availableNodeTypes.forEach(type => {
       this.selectedNodeTypes[type] = true;
     });
 
-    // Initialize article selection
     this.articles = this.nodes
         .filter(node => node.type === 'Article')
         .sort((a, b) => a.label.localeCompare(b.label));
@@ -452,32 +446,28 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       this.selectedArticles[article.id] = true;
     });
 
-    // Initialize filtered arrays
     this.filteredNodes = [...this.nodes];
     this.filteredLinks = [...this.links];
 
-    // Apply layout adjustments
     this.adjustNodePositions();
   }
 
   private adjustNodePositions() {
-    // Add some randomness to prevent exact overlaps
     this.nodes.forEach(node => {
       if (node.type !== 'Keyword' && node.type !== 'Article') {
-        const jitter = 50; // Adjust this value to control the amount of random displacement
+        const jitter = 50;
         node.x += (Math.random() - 0.5) * jitter;
         node.y += (Math.random() - 0.5) * jitter;
       }
     });
 
-    // Optional: Add repulsion between nodes to prevent overlaps
-    for (let i = 0; i < 10; i++) { // Run multiple iterations for better spacing
+    for (let i = 0; i < 10; i++) {
       this.nodes.forEach((node1, i) => {
         this.nodes.slice(i + 1).forEach(node2 => {
           const dx = node2.x - node1.x;
           const dy = node2.y - node1.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const minDistance = this.nodeRadius * 3; // Minimum desired distance between nodes
+          const minDistance = this.nodeRadius * 3;
 
           if (distance < minDistance) {
             const force = (minDistance - distance) / distance;
@@ -489,7 +479,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
             node1.x -= moveX;
             node1.y -= moveY;
 
-            // Keep nodes within bounds
             this.constrainNodePosition(node1);
             this.constrainNodePosition(node2);
           }
@@ -505,7 +494,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
   }
 
   private determineNodeType(triple: RDFTriple): string {
-    // Check for explicit type information
     if (triple.p.value.includes('@type')) {
       const type = triple.o.value;
       if (type.includes('Person')) return 'Person';
@@ -514,7 +502,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       if (type.includes('ImageObject')) return 'Image';
     }
 
-    // Infer type from predicates and patterns
     if (triple.p.value.includes('author')) return 'Author';
     if (triple.p.value.includes('publisher')) return 'Publisher';
     if (triple.p.value.includes('keywords')) return 'Keyword';
@@ -525,7 +512,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
   }
 
   private getDisplayLabel(uri: string): string {
-    // For articles, try to get the headline instead of URL
     if (uri.includes('article')) {
       const articleNode = this.nodes.find(n => n.id === uri);
       if (articleNode?.value) {
@@ -533,15 +519,12 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Remove any XML schema type information
     const cleanUri = uri.split('^^')[0].replace(/^"|"$/g, '');
 
-    // Handle special cases for dates and numbers
     if (cleanUri.includes('XMLSchema#')) {
       return cleanUri.split('"')[1] || cleanUri;
     }
 
-    // Extract the local name from URI and decode
     const parts = cleanUri.split(/[/#]/);
     const localName = parts[parts.length - 1];
     return decodeURIComponent(localName).replace(/_/g, ' ');
@@ -549,30 +532,27 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
 
   public getNodeColor(type: string): string {
     const colors: { [key: string]: string } = {
-      'Article': '#FF4B4B',     // Bright red
-      'Publisher': '#4CAF50',   // Green
-      'Author': '#2196F3',      // Blue
-      'Keyword': '#9C27B0',     // Purple
-      'Language': '#FF9800',    // Orange
-      'Nationality': '#795548', // Brown
-      'JobTitle': '#009688',    // Teal
-      'Section': '#607D8B',     // Blue Grey
-      'Resource': '#757575',    // Gray
-      'Unknown': '#BDBDBD'      // Light Gray
+      'Article': '#FF4B4B',
+      'Publisher': '#4CAF50',
+      'Author': '#2196F3',
+      'Keyword': '#9C27B0',
+      'Language': '#FF9800',
+      'Nationality': '#795548',
+      'JobTitle': '#009688',
+      'Section': '#607D8B',
+      'Resource': '#757575',
+      'Unknown': '#BDBDBD'
     };
     return colors[type] || colors['Unknown'];
   }
 
   private getLocalName(uri: string): string {
-    // Remove any XML schema type information
     const cleanUri = uri.split('^^')[0].replace(/^"|"$/g, '');
 
-    // Handle special cases for dates and numbers
     if (cleanUri.includes('XMLSchema#')) {
       return cleanUri.split('"')[1] || cleanUri;
     }
 
-    // Extract the local name from URI
     const parts = cleanUri.split(/[/#]/);
     return decodeURIComponent(parts[parts.length - 1]);
   }
@@ -587,7 +567,7 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
     this.svg.setAttribute('width', '100%');
     this.svg.setAttribute('height', '100%');
     this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
-    this.svg.style.backgroundColor = '#f8f9fa'; // Light background for visibility
+    this.svg.style.backgroundColor = '#f8f9fa';
 
     this.mainGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     this.svg.appendChild(this.mainGroup);
@@ -622,7 +602,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
     const mainGroup = this.mainGroup;
     if (!mainGroup) return;
 
-    // Create links only for filtered data
     this.filteredLinks.forEach(link => {
       const source = this.filteredNodes.find(n => n.id === link.source);
       const target = this.filteredNodes.find(n => n.id === link.target);
@@ -644,30 +623,26 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Create nodes only for filtered data
     this.filteredNodes.forEach(node => {
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       g.setAttribute('data-node-id', node.id);
       g.setAttribute('cursor', 'grab');
 
-      // Create node circle
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
       circle.setAttribute('r', this.nodeRadius.toString());
       circle.setAttribute('fill', this.getNodeColor(node.type));
       circle.setAttribute('stroke', '#ffffff');
       circle.setAttribute('stroke-width', '2');
 
-      // Node label
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.textContent = node.label;
       text.setAttribute('text-anchor', 'middle');
       text.setAttribute('class', 'text-sm');
-      text.setAttribute('y', '40'); // Position name above node
+      text.setAttribute('y', '40');
 
       g.appendChild(circle);
       g.appendChild(text);
 
-      // Event listeners
       g.addEventListener('mousedown', (e: MouseEvent) => {
         if (e.button === 0) {
           this.selectedNode = node;
@@ -704,7 +679,12 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
     const mainGroup = this.mainGroup;
     if (!mainGroup) return;
 
-    this.nodes.forEach(node => {
+    this.filteredNodes.forEach(node => {
+      if (isNaN(node.x) || isNaN(node.y)) {
+        node.x = this.width / 2;
+        node.y = this.height / 2;
+      }
+
       const g = mainGroup.querySelector(`[data-node-id="${node.id}"]`);
       if (!g) return;
 
@@ -712,16 +692,16 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       const text = g.querySelector('text');
 
       if (circle && text) {
-        circle.setAttribute('cx', node.x.toString());
-        circle.setAttribute('cy', node.y.toString());
-        text.setAttribute('x', node.x.toString());
-        text.setAttribute('y', (node.y + 30).toString());
+        circle.setAttribute('cx', `${node.x || this.width / 2}`);
+        circle.setAttribute('cy', `${node.y || this.height / 2}`);
+        text.setAttribute('x', `${node.x || this.width / 2}`);
+        text.setAttribute('y', `${(node.y || this.height / 2) + 30}`);
       }
     });
 
-    this.links.forEach(link => {
-      const source = this.nodes.find(n => n.id === link.source);
-      const target = this.nodes.find(n => n.id === link.target);
+    this.filteredLinks.forEach(link => {
+      const source = this.filteredNodes.find(n => n.id === link.source);
+      const target = this.filteredNodes.find(n => n.id === link.target);
 
       if (!source || !target) return;
 
@@ -734,15 +714,15 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       ) as SVGTextElement | null;
 
       if (line) {
-        line.setAttribute('x1', source.x.toString());
-        line.setAttribute('y1', source.y.toString());
-        line.setAttribute('x2', target.x.toString());
-        line.setAttribute('y2', target.y.toString());
+        line.setAttribute('x1', `${source.x || this.width / 2}`);
+        line.setAttribute('y1', `${source.y || this.height / 2}`);
+        line.setAttribute('x2', `${target.x || this.width / 2}`);
+        line.setAttribute('y2', `${target.y || this.height / 2}`);
       }
 
       if (label) {
-        label.setAttribute('x', ((source.x + target.x) / 2).toString());
-        label.setAttribute('y', ((source.y + target.y) / 2 - 10).toString());
+        label.setAttribute('x', `${((source.x || 0) + (target.x || 0)) / 2}`);
+        label.setAttribute('y', `${((source.y || 0) + (target.y || 0)) / 2 - 10}`);
       }
     });
   }
@@ -844,6 +824,7 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
 
   resetView() {
     if (this.svg) {
+      this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
       this.currentZoom = 1;
     }
   }
@@ -861,7 +842,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
         node.type.toLowerCase().includes(term)
     );
 
-    // Highlight search results
     this.resetHighlighting();
     this.searchResults.forEach(node => {
       this.highlightNode(node.id, true);
@@ -874,7 +854,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
     this.resetHighlighting();
     this.highlightedNodeId = nodeId;
 
-    // Find connected nodes and links
     const connectedLinks = this.links.filter(
         link => link.source === nodeId || link.target === nodeId
     );
@@ -882,7 +861,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
         connectedLinks.flatMap(link => [link.source, link.target])
     );
 
-    // Fade all nodes and links
     this.nodes.forEach(node => {
       const nodeElement = this.mainGroup!.querySelector(
           `[data-node-id="${node.id}"]`
@@ -903,7 +881,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       if (labelElement) labelElement.setAttribute('opacity', this.fadedOpacity);
     });
 
-    // Highlight connected elements
     connectedNodeIds.forEach(id => {
       const nodeElement = this.mainGroup!.querySelector(
           `[data-node-id="${id}"]`
@@ -940,7 +917,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
 
     this.highlightedNodeId = null;
 
-    // Reset all nodes
     this.nodes.forEach(node => {
       const nodeElement = this.mainGroup!.querySelector(
           `[data-node-id="${node.id}"]`
@@ -955,7 +931,6 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Reset all links
     this.links.forEach((link: RDFLink) => {
       const linkElement = this.mainGroup!.querySelector(
           `[data-link-id="${link.source}-${link.target}"]`

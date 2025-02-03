@@ -3,49 +3,49 @@
     <div class="content">
       <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
         <div class="search-container">
-          <input 
-            type="text" 
-            formControlName="keywords" 
-            placeholder="Search articles..." 
+          <input
+            type="text"
+            formControlName="keywords"
+            placeholder="Search articles..."
             class="search-input"
             [class.is-invalid]="searchTermControl?.invalid && searchTermControl?.touched">
-          
+
           <button type="submit" class="search-btn">Search</button>
           <button type="button" class="advanced-search-btn" (click)="toggleAdvancedSearch()">
             {{ showAdvancedSearch ? 'Hide Advanced' : 'Advanced Search' }}
           </button>
         </div>
-  
+
         <!-- Error message for search term -->
         <div class="error-message" *ngIf="searchTermControl?.invalid && searchTermControl?.touched">
           <small *ngIf="searchTermControl?.errors?.['required']">Search term is required</small>
           <small *ngIf="searchTermControl?.errors?.['minlength']">Search term must be at least 3 characters</small>
         </div>
-  
+
         <!-- Advanced Search Form -->
         <div *ngIf="showAdvancedSearch" formGroupName="advancedSearch" class="advanced-search-form">
-        
-  
+
+
           <mat-form-field appearance="outline">
             <mat-label>Language</mat-label>
             <input matInput formControlName="inLanguage">
           </mat-form-field>
-  
+
           <mat-form-field appearance="outline">
             <mat-label>Author Name</mat-label>
             <input matInput formControlName="author">
           </mat-form-field>
-  
+
           <mat-form-field appearance="outline">
             <mat-label>Author Nationality</mat-label>
             <input matInput formControlName="nationality">
           </mat-form-field>
-  
+
           <mat-form-field appearance="outline">
             <mat-label>Publisher</mat-label>
             <input matInput formControlName="publisher">
           </mat-form-field>
-  
+
           <mat-form-field appearance="outline">
             <mat-label>Word Count Minimum</mat-label>
             <input matInput type="number" formControlName="wordcount_min">
@@ -53,7 +53,7 @@
               Minimum word count cannot be negative
             </mat-error>
           </mat-form-field>
-  
+
           <mat-form-field appearance="outline">
             <mat-label>Word Count Maximum</mat-label>
             <input matInput type="number" formControlName="wordcount_max">
@@ -61,17 +61,17 @@
               Maximum word count cannot be negative
             </mat-error>
           </mat-form-field>
-  
+
           <mat-form-field appearance="outline">
             <mat-label>Published Date Min</mat-label>
             <input matInput type="date" formControlName="datePublished_min">
           </mat-form-field>
-  
+
           <mat-form-field appearance="outline">
             <mat-label>Published Date Max</mat-label>
             <input matInput type="date" formControlName="datePublished_max">
           </mat-form-field>
-  
+
           <div class="advanced-search-actions">
             <button mat-raised-button color="primary" type="submit">
               Submit Advanced Search
@@ -83,14 +83,19 @@
         </div>
       </form>
       <div class="search-results">
-        <mat-card *ngFor="let article of searchResults" (click)="openDialog(article)" class="article-card">
+        <mat-card *ngFor="let article of searchResults" class="article-card">
           <mat-card-header>
             <mat-card-title>{{ article.headline }}</mat-card-title>
             <mat-card-subtitle>
               {{ article.author }} - {{ article.datePublished | date:'medium' }}<br>
-            </mat-card-subtitle>           
+            </mat-card-subtitle>
           </mat-card-header>
-          <img mat-card-image [src]="article.thumbnailUrl" alt="Thumbnail of article">
+          <img mat-card-image [src]="article.thumbnailUrl" alt="Thumbnail of article" (click)="openDialog(article)">
+          <button mat-icon-button class="favorite-button" (click)="toggleFavorite(article)">
+            <mat-icon [class.active]="article.isFavorite">
+              {{article.isFavorite ? 'favorite' : 'favorite_border'}}
+            </mat-icon>
+          </button>
           <mat-card-content>
             <p>{{ article.abstract }}</p>
           </mat-card-content>
@@ -103,12 +108,12 @@
               {{ searchType }}
             </div>
           </mat-card-actions>
-         
-          
-          
+
+
+
         </mat-card>
-       
+
       </div>
-      
-   
+
+
   </div>
