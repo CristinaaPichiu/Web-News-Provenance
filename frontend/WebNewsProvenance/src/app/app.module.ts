@@ -35,8 +35,8 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { RecommendedArticlesComponent } from './components/recommended-articles/recommended-articles.component';
 import { GraphVisualizationComponent } from './components/graph-visualization/graph-visualization.component';
 import { FormsModule } from '@angular/forms';
-import { FavoriteArticlesComponent } from './components/favorite-articles/favorite-articles.component';
-import {MatLegacyButtonModule} from "@angular/material/legacy-button";
+import { SearchArticleComponent } from './components/search-article/search-article.component';
+import { ArticleDetailsModalComponent } from './components/article-details-modal/article-details-modal.component';
 
 
 @NgModule({
@@ -57,7 +57,8 @@ import {MatLegacyButtonModule} from "@angular/material/legacy-button";
     HistoryCardComponent,
     RecommendedArticlesComponent,
     GraphVisualizationComponent,
-    FavoriteArticlesComponent
+    SearchArticleComponent,
+    ArticleDetailsModalComponent
   ],
   imports: [
     BrowserModule,

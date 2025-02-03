@@ -1,0 +1,29 @@
+<mat-dialog-content>
+    <h1>{{ data.article.headline }}</h1>
+  
+    <div class="article-meta-container">
+        <div class="article-meta-column">
+            <div class="label author-label">Author: {{ articleData?.author?.[0]?.name || 'Unknown' }}</div>
+            <div class="label date-label">Date Published: {{ data.article.datePublished | date:'medium' }}</div>
+            <div class="label type-label">Type: {{ articleData?.['@type'] || 'Unknown' }}</div>
+       
+
+            <div class="label language-label">Language: {{ articleData?.inLanguage || 'Unknown' }}</div>
+            <div class="label wordcount-label">Word Count: {{ articleData?.wordCount || 'Unknown' }}</div>
+        </div>
+    </div>
+  
+    <div class="abstract">
+      <strong>Abstract:</strong> {{ data.article.abstract }}
+    </div>
+  
+    <div class="article-body">
+      <strong>Article Body:</strong>
+      <p *ngFor="let paragraph of articleData?.articleBody">{{ paragraph }}</p>
+    </div>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions>
+    <button mat-button (click)="dialogRef.close()">Close</button>
+  </mat-dialog-actions>
+  
