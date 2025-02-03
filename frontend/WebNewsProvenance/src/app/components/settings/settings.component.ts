@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Renderer2 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
+import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -19,6 +20,7 @@ export class SettingsComponent implements OnInit {
     private fb: FormBuilder,
     private router: Router,
     private renderer: Renderer2,
+    private authService: AuthService,
     @Inject(DOCUMENT) private document: Document
   ) {}
 
@@ -137,7 +139,16 @@ export class SettingsComponent implements OnInit {
   }
 
   onChangePassword(): void {
-
+    if (this.passwordForm.valid && this.passwordForm.value.newPassword === this.passwordForm.value.confirmNewPassword) {
+      this.authService.changePassword(this.passwordForm.value.currentPassword, this.passwordForm.value.newPassword).subscribe({
+        next: (response) => {
+          this.saveSuccess = true;
+        },
+        error: (error) => {
+          console.error('Error changing password:', error);
+        }
+      });
+    }
   }
 
 
