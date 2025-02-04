@@ -1,0 +1,163 @@
+openapi: 3.0.3
+info:
+  title: Specifications about API
+  description: A RESTful API for managing articles, users, authentication, and emails.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:127.0.0.1:5000
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Article:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        url:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+    EmailRequest:
+      type: object
+      properties:
+        email:
+          type: string
+  security:
+    - BearerAuth: []
+
+paths:
+  /article/create:
+    post:
+      summary: Create a new article
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Article created successfully
+  
+  /article/search:
+    get:
+      summary: Search for articles
+      parameters:
+        - name: keywords
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results returned successfully
+
+  /auth/register:
+    post:
+      summary: Register a new user
+      responses:
+        '201':
+          description: User registered successfully
+
+  /auth/login:
+    post:
+      summary: Authenticate user and generate JWT tokens
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/refresh:
+    post:
+      summary: Refresh JWT access token
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /email/request-reset-email:
+    post:
+      summary: Request password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '200':
+          description: Reset email sent successfully
+
+  /user/history:
+    post:
+      summary: Add user history
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: History added successfully
+    get:
+      summary: Get user history
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User history retrieved
+
+  /user/recommend:
+    get:
+      summary: Get article recommendations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Recommendations retrieved successfully
+
+  /user/favorites:
+    post:
+      summary: Add article to favorites
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Article added to favorites
+    delete:
+      summary: Remove article from favorites
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Article removed from favorites
+    get:
+      summary: Get user favorites
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User favorites retrieved
