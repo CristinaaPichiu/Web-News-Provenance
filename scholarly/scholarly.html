@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>NePr: Web News Provenance - Comprehensive Documentation</title>
+    <link rel="stylesheet" href="css/scholarly.min.css">
+</head>
+<body prefix="schema: http://schema.org">
+    <header>
+        <h1>NePr (Web News Provenance)</h1>
+    </header>
+
+    <div role="contentinfo">
+        <dl>
+            <dt>Authors</dt>
+            <dd>
+                Miruna-Diana Curduman
+                &amp;
+                Cristina-Catalina Pichiu
+            </dd>
+            <dt>Project Type</dt>
+            <dd>Web Application for News Provenance Management</dd>
+        </dl>
+    </div>
+
+    <nav id="table-of-contents">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#abstract">Abstract</a></li>
+            <li><a href="#motivation">Project Motivation</a></li>
+            <li>
+                <a href="#technical-architecture">Technical Architecture</a>
+                <ul> <!-- This should be inside a <li> -->
+                    <li><a href="#microservices-design">Microservices Design</a></li>
+                    <li><a href="#technology-stack">Technology Stack</a></li>
+                    <li><a href="#metadata-semantic">Metadata and Semantic Integration</a></li>
+                    <li><a href="#sparql-endpoint">SPARQL Endpoint Capabilities</a></li>
+                    <li><a href="#system-architecture">System Architecture and API Structure</a></li>
+                </ul>
+            </li>
+            <li><a href="#rdf-model">RDF-based Knowledge Models</a></li>
+            <li><a href="#external-data">Use of External Data/Knowledge Sources</a></li>
+            <li><a href="#inspirations">Project Inspirations</a></li>
+            <li><a href="#future-roadmap">Future Development Roadmap</a></li>
+            <li><a href="#use-case-graph-data">Use Case: Exploring and Analyzing Graph Data</a></li>
+            <li><a href="#use-case-managing-articles">Use Case: Viewing and Managing Recommended and History Articles</a></li>
+            <li><a href="#use-case-searching-articles">Use Case: Searching for Articles</a></li>
+            <li><a href="#demonstration-video">Demonstration Video</a></li>
+            <li><a href="#acknowledgements">Acknowledgements</a></li>
+        </ul>
+    </nav>
+    
+
+
+    <section typeof="sa:Abstract" id="abstract" role="doc-abstract">
+        <h2>Abstract</h2>
+        <p>
+            NePr is an innovative web platform designed to revolutionize news content tracking, providing comprehensive provenance management for digital journalism. By integrating advanced metadata techniques, microservices architecture, and semantic web technologies, the project offers unprecedented insights into news article origins, transformations, and contextual information.
+        </p>
+    </section>
+
+    <section id="motivation">
+        <h2>Project Motivation</h2>
+        <p>
+            In an era of information overload and potential misinformation, NePr addresses critical challenges:
+        </p>
+        <ul>
+            <li>Tracking the complete lifecycle of news articles</li>
+            <li>Providing transparent source verification</li>
+            <li>Enabling comprehensive content analysis</li>
+            <li>Supporting multi-format and multilingual news content</li>
+        </ul>
+    </section>
+
+    <section id="technical-architecture">
+        <h2>Technical Architecture</h2>
+        
+        <h3 id="microservices-design">Microservices Design</h3>
+        <p>
+            The project leverages a microservices architecture to ensure:
+        </p>
+        <ul>
+            <li>High scalability and modularity</li>
+            <li>Independent deployment of service components</li>
+            <li>Flexible technology stack integration</li>
+        </ul>
+        
+        <img src="assets/aa-Page-1.drawio.png" alt="Microservices Architecture Diagram" style="width:100%; height:auto; margin: 10px 0;">
+        
+        <h3 id="technology-stack">Technology Stack</h3>
+        <div>
+            <h4>Backend: Flask (Python)</h4>
+            <ul>
+                <li>Lightweight and flexible web framework</li>
+                <li>Supports rapid development of API endpoints</li>
+                <li>Easy integration with multiple extensions</li>
+                <li>Robust routing and request handling</li>
+            </ul>
+    
+            <h4>Frontend: Angular</h4>
+            <ul>
+                <li>Component-based architecture</li>
+                <li>Reactive programming model</li>
+                <li>Strong typing with TypeScript</li>
+                <li>Efficient dependency injection</li>
+            </ul>
+        </div>
+        <img src="assets/aa-Page-2.drawio.png" alt="Technology Stack Diagram" style="width:100%; height:auto; margin: 10px 0;">
+        
+        <h3 id="metadata-semantic">Metadata and Semantic Integration</h3>
+        <p>
+            Comprehensive metadata support through:
+        </p>
+        <ul>
+            <li>DCMI (Dublin Core Metadata Initiative) for standardized metadata</li>
+            <li>ITPC Standards for media content classification</li>
+            <li>Social Semantic Web Thesaurus for advanced categorization</li>
+            <li>External knowledge graph integration via:
+                <ul>
+                    <li>DBpedia for structured information</li>
+                    <li>Wikidata for extensive entity relationships</li>
+                </ul>
+            </li>
+        </ul>
+        <img src="assets/aa-Page-3.drawio.png" alt="Metadata and Semantic Integration Diagram" style="width:100%; height:auto; margin: 10px 0;">
+        
+        
+        <h3 id="sparql-endpoint">SPARQL Endpoint Capabilities</h3>
+        <p>
+            Advanced querying capabilities including:
+        </p>
+        <ul>
+            <li>RDFa and JSON-LD support</li>
+            <li>Creative Work concept from schema.org</li>
+            <li>Complex query scenarios such as:
+                <ul>
+                    <li>Listing recent editorials on specific topics</li>
+                    <li>Filtering articles by language and length</li>
+                    <li>Discovering investigative journalism content</li>
+                </ul>
+            </li>
+        </ul>
+        
+        <h3 id ="system-architecture">System Architecture and API Structure</h3>
+        <p>
+            The system implements a REST architectural style using the Flask framework in Python, with a well-organized modular structure.
+            The API is divided into four main controllers, each handling specific functionality domains:
+        </p>
+        <ul>
+            <li><strong>Article Controller:</strong> Manages article operations (creation, search, retrieval)</li>
+            <li><strong>Auth Controller:</strong> Handles authentication and user management</li>
+            <li><strong>Email Controller:</strong> Processes email-related operations</li>
+            <li><strong>User Controller:</strong> Handles user-specific features and preferences</li>
+        </ul>
+        
+        <h3>Authentication & Security Implementation</h3>
+        <p>The system uses a robust JWT-based authentication system with several security features:</p>
+        <ul>
+            <li>Access and refresh token mechanism for enhanced security</li>
+            <li>Protected routes using <code>@jwt_required()</code> decorator</li>
+            <li>Role-based access control (RBAC) with admin privileges</li>
+            <li>Secure password storage through hashing</li>
+            <li>Token-based password reset functionality</li>
+        </ul>
+        
+        <h3>RESTful Endpoints Organization</h3>
+        <p>The API endpoints are logically organized across controllers. Here are the key endpoints:</p>
+        
+        <h4>Article Controller Endpoints</h4>
+        <ul>
+            <li>POST /article/create - Creates new articles</li>
+            <li>GET /article/search - Enables keyword-based article search</li>
+            <li>GET /article/search/advanced - Provides advanced search capabilities</li>
+            <li>GET /article/all - Retrieves all articles</li>
+            <li>DELETE /article/ - Removes articles by URL</li>
+        </ul>
+        
+        <h4>Auth Controller Endpoints</h4>
+        <ul>
+            <li>POST /auth/register - Handles user registration</li>
+            <li>POST /auth/login - Manages user authentication</li>
+            <li>POST /auth/refresh - Refreshes access tokens</li>
+            <li>GET /auth/get-users - Admin-only user management</li>
+            <li>PUT /auth/update-user/&lt;id&gt; - Updates user information</li>
+        </ul>
+        
+        <h3>Error Handling and Response Standards</h3>
+        <p>The API implements comprehensive error handling and standardized responses:</p>
+        <ul>
+            <li><strong>HTTP Status Codes:</strong>
+                <ul>
+                    <li>200/201 for successful operations</li>
+                    <li>400 for bad requests</li>
+                    <li>401/403 for authentication/authorization issues</li>
+                    <li>404 for not found resources</li>
+                    <li>500 for server errors</li>
+                </ul>
+            </li>
+            <li><strong>Standardized JSON Response Format:</strong>
+                <pre>
+        {
+            "message": "Status message",
+            "data": "Response data (when applicable)",
+            "error": "Error details (when applicable)"
+        }
+                </pre>
+            </li>
+        </ul>
+        
+        <h3>Integration Features and Database Management</h3>
+        <ul>
+            <li><strong>Database Integration:</strong>
+                <ul>
+                    <li>PostgreSQL for relational data storage</li>
+                    <li>SPARQL service for graph database operations</li>
+                    <li>Proper connection pooling and resource management</li>
+                </ul>
+            </li>
+            <li><strong>External Services:</strong>
+                <ul>
+                    <li>Email service for notifications</li>
+                    <li>Selenium WebDriver for web scraping</li>
+                    <li>User recommendation system</li>
+                </ul>
+            </li>
+        </ul>
+        
+        <h3>Advanced Functionality</h3>
+        <ul>
+            <li><strong>User Features:</strong>
+                <ul>
+                    <li>Personalized article recommendations</li>
+                    <li>History tracking</li>
+                    <li>Favorites management</li>
+                    <li>Advanced search with multiple parameters</li>
+                </ul>
+            </li>
+            <li><strong>Security Measures:</strong>
+                <ul>
+                    <li>JWT verification on protected routes</li>
+                    <li>Secure password management</li>
+                    <li>Role-based access control</li>
+                    <li>Timed token expiration</li>
+                </ul>
+            </li>
+        </ul>
+        
+       
+        
+    </section>
+    
+    <section id="rdf-model">
+        <h2>RDF-based knowledge models</h2>
+        <p>
+            The implemented knowledge model demonstrates a sophisticated approach to representing article metadata 
+            through a hierarchical class structure based on <strong>Schema.org</strong> vocabulary. The model's foundation 
+            lies in the <strong>CreativeWork</strong> class, which serves as the base for more specialized content types. 
+            This design choice enables flexible content representation while maintaining semantic consistency across 
+            different types of creative works.
+        </p>
+    
+        <h3>Key Components of the Model</h3>
+    
+        <h4>Base Classes and Inheritance</h4>
+        <ul>
+            <li>
+                <strong>CreativeWork (Base Class)</strong>
+                <ul>
+                    <li>Contains common metadata: abstract, dates, language info</li>
+                    <li>Manages relationships with authors, editors, and publishers</li>
+                    <li>Handles basic media references (audio, video, thumbnails)</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Article (Extends CreativeWork)</strong>
+                <ul>
+                    <li>Adds specialized fields: articleBody, articleSection, wordCount</li>
+                    <li>Inherits all base metadata capabilities</li>
+                    <li>Enables article-specific content management</li>
+                </ul>
+            </li>
+        </ul>
+    
+        <h4>Entity Representation System</h4>
+        <p>
+            The model implements a comprehensive approach to representing different types of entities involved in content 
+            creation and publication. This system shows particular sophistication in handling both individual and 
+            organizational actors.
+        </p>
+    
+        <h5>Entity Classes</h5>
+        <ul>
+            <li>
+                <strong>Person</strong>
+                <ul>
+                    <li>Biographical data: birth/death dates, places</li>
+                    <li>Professional info: affiliation, jobTitle</li>
+                    <li>Personal details: gender, nationality</li>
+                    <li>Contact information: email, address</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Organization</strong>
+                <ul>
+                    <li>Basic details: name, address</li>
+                    <li>Publishing principles</li>
+                    <li>Organizational relationships</li>
+                </ul>
+            </li>
+        </ul>
+    
+        <h5>Role-Based Entity Classifications</h5>
+        <ul>
+            <li><strong>Author</strong> (can be <em>Person</em> or <em>Organization</em>)</li>
+            <li><strong>Editor</strong> (always <em>Person</em>)</li>
+            <li><strong>Publisher</strong> (can be <em>Person</em> or <em>Organization</em>)</li>
+        </ul>
+    
+        <h4>Multimedia Content Handling</h4>
+        <p>
+            The system implements a sophisticated approach to multimedia content representation through a hierarchical 
+            structure. This design enables consistent base attributes while allowing for media-specific properties.
+        </p>
+    
+        <h5>Media Class Hierarchy</h5>
+        <ul>
+            <li>
+                <strong>MediaObject (Base Class)</strong>
+                <ul>
+                    <li>Common properties: contentUrl, duration, dimensions</li>
+                    <li>Basic embedding support</li>
+                    <li>Upload date tracking</li>
+                </ul>
+            </li>
+            <li>
+                <strong>Specialized Media Classes</strong>
+                <ul>
+                    <li><strong>AudioObject:</strong> Adds transcript support</li>
+                    <li><strong>VideoObject:</strong> Adds quality metrics, director info</li>
+                    <li><strong>ImageObject:</strong> Handles embedded captions</li>
+                </ul>
+            </li>
+        </ul>
+    
+        <h4>External Knowledge Integration</h4>
+        <p>
+            The model demonstrates practical application of <strong>linked data principles</strong> through integration 
+            with external knowledge bases. This is particularly evident in:
+        </p>
+    
+        <h5>Wikidata Integration Features</h5>
+        <ul>
+            <li>Person enrichment (biographical data)</li>
+            <li>Organization details enhancement</li>
+            <li>Publishing principles lookup</li>
+            <li>Professional background information</li>
+        </ul>
+    
+        <h4>Practical Implementation Considerations</h4>
+        <p>
+            The implementation reveals careful attention to real-world usage requirements and practical deployment needs. 
+            The code includes robust error handling and logging mechanisms, indicating consideration for production environments.
+        </p>
+    
+        <h5>Strengths</h5>
+        <ul>
+            <li><strong>Schema.org vocabulary</strong> ensures broad compatibility</li>
+            <li>Flexible attribute handling through optional fields</li>
+            <li>Strong support for multimedia content</li>
+            <li>Rich entity relationship modeling</li>
+        </ul>
+    
+        
+    </section>
+    <section id="external-data">
+        <h2>Use of external data/knowledge sources</h2>
+        <p>
+            The solution demonstrates a sophisticated approach to handling external data sources and knowledge 
+            management through its <strong>SPARQLService</strong> implementation. The system employs a pragmatic 
+            architecture for managing and querying article data while adhering to <strong>linked data principles</strong>.
+        </p>
+        <p>
+            In terms of knowledge integration, the solution implements a robust SPARQL querying system that interfaces 
+            with a <strong>Fuseki endpoint</strong>, allowing for flexible and powerful data retrieval. This is particularly 
+            evident in the recommendation system implementation, which combines multiple data sources to generate 
+            personalized article recommendations. The <code>get_recommendations</code> method demonstrates how the system 
+            leverages user history and article metadata to create contextually relevant suggestions.
+        </p>
+    
+        <h3>Adherence to Linked Data Principles</h3>
+        <p>The solution strongly adheres to linked data principles in several ways:</p>
+        <ul>
+            <li>Use of HTTP URIs for naming entities, as seen in the article URLs and resource identifiers.</li>
+            <li>Implementation of RDF and Schema.org vocabularies for data representation.</li>
+            <li>Establishment of meaningful links between different pieces of content through the graph structure.</li>
+            <li>Provision of standardized SPARQL endpoint access for data retrieval.</li>
+        </ul>
+    
+        <h3>SPARQL Query Capabilities</h3>
+        <p>The SPARQL queries implemented in the system show particular sophistication in several areas:</p>
+    
+        <h4>Advanced Search Capabilities</h4>
+        <ul>
+            <li>
+                The <code>advanced_search</code> method implements complex SPARQL queries that support multiple 
+                search criteria, including keywords, word count, language, author information, and publication dates.
+            </li>
+            <li>
+                The query construction dynamically adapts to provided parameters, creating efficient and targeted searches.
+            </li>
+        </ul>
+    
+        <h4>Semantic Relationship Handling</h4>
+        <ul>
+            <li>
+                The system manages complex relationships between entities like authors, publishers, and articles.
+            </li>
+            <li>
+                The <code>populate_article_data</code> method demonstrates how nested relationships are handled 
+                and transformed into structured JSON data.
+            </li>
+        </ul>
+    
+        <h4>Multilingual Support</h4>
+        <ul>
+            <li>
+                The recommendation system is designed to work across multiple languages, as evidenced by the 
+                language-agnostic implementation of the <code>get_recommendations</code> method.
+            </li>
+            <li>
+                The TF-IDF vectorization uses character-level n-grams to maintain effectiveness across different languages.
+            </li>
+        </ul>
+    
+        <h4>Graph Management</h4>
+        <ul>
+            <li>
+                The <code>create_graph</code> and <code>insert_graph</code> methods showcase how the system manages 
+                RDF graph creation and storage.
+            </li>
+            <li>
+                The <strong>GraphBuilder</strong> integration demonstrates proper handling of JSON-LD and RDFa data.
+            </li>
+        </ul>
+    
+        <h3>Complex Query Handling</h3>
+        <p>
+            The implementation of SPARQL queries shows particular sophistication in handling complex data relationships 
+            and filtering. The query structure efficiently manages relationships between entities, supports advanced 
+            filtering, and optimizes data retrieval from the knowledge graph.
+        </p>
+    </section>
+
+    
+    <section id="inspirations">
+        <h2>Project Inspirations</h2>
+        <p>
+            Design and conceptual inspirations:
+        </p>
+        <ul>
+            <li>Europeana Stories: Digital cultural heritage approach</li>
+            <li>The London Gazette: Historical document tracking</li>
+        </ul>
+    </section>
+
+    <section id="future-roadmap">
+        <h2>Future Development Roadmap</h2>
+        <h3>Short-Term Goals</h3>
+        <ul>
+            <li>Enhanced AI-driven content classification</li>
+            <li>Improved multilingual support</li>
+            <li>More sophisticated provenance tracking algorithms</li>
+        </ul>
+
+        <h3>Long-Term Vision</h3>
+        <ul>
+            <li>Machine learning-based source credibility scoring</li>
+            <li>Advanced recommendation systems</li>
+            <li>Expanded semantic web integration</li>
+        </ul>
+    </section>
+
+    <section id="use-case-graph-data">
+       <h2>Use Case: Exploring and Analyzing Graph Data</h2>
+
+    <h3>Objective</h3>
+    <p>
+        A user wants to explore and analyze relationships within RDF-based graph data using the graph visualization tool.
+    </p>
+
+    <h3>Steps to Use the Graph Visualization Tool</h3>
+
+    <h4>1. Accessing the Page</h4>
+    <ul>
+        <li>The user navigates to the graph visualization page, where the interface is split into three main sections: 
+            <strong>the graph container</strong>, <strong>filter panel</strong>, and <strong>search functionality</strong>.
+        </li>
+    </ul>
+
+    <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+        <div style="text-align: center;">
+            <img src="assets/image1.png" alt="Graph visualization 1" style="width: 100%; height: auto; margin: 10px;">
+            <p>Figure 1: Initial Data Graph Representation</p>
+        </div>
+    </div>
+
+    <h4>2. Viewing the Graph</h4>
+    <ul>
+        <li>The central graph area displays nodes (representing entities) and edges (showing relationships).</li>
+        <li>The user sees a structured visualization of data where different node types are <strong>color-coded</strong>.</li>
+    </ul>
+    <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+       
+
+        <div style="text-align: center;">
+            <img src="assets/image2.webp" alt="Graph visualization 2" style="width: 100%; height: auto; margin: 10px;">
+            <p>Figure 2: Intermediate Relationship Mapping</p>
+        </div>
+
+       
+    </div>
+
+    <h4>3. Interacting with the Graph</h4>
+    <ul>
+        <li>The user can zoom in, zoom out, and reset the view using the buttons in the graph controls section.</li>
+        <li>Clicking and dragging allows <strong>panning</strong> across the graph for better visibility.</li>
+    </ul>
+
+    <h4>4. Filtering Node Types</h4>
+    <ul>
+        <li>The user views the filter panel on the right and sees available node types.</li>
+        <li>They can toggle all filters on/off or select specific types to focus on certain entities.</li>
+        <li>The graph updates dynamically based on the selected filters.</li>
+    </ul>
+
+    <h4>5. Searching for Specific Nodes</h4>
+    <ul>
+        <li>The user types a keyword into the search bar to find a particular node.</li>
+        <li>Matching results appear below the search input.</li>
+        <li>Clicking on a search result <strong>highlights</strong> the node and its connections in the graph.</li>
+    </ul>
+    <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+       
+
+        <div style="text-align: center;">
+            <img src="assets/image3.webp" alt="Graph visualization 3" style="width: 100%; height: auto; margin: 10px;">
+            <p>Figure 3: Final Knowledge Graph Integration</p>
+        </div>
+    </div>
+
+    <h4>6. Exploring Relationships</h4>
+    <ul>
+        <li>The user selects a node by clicking on it, which highlights all connected nodes and relationships.</li>
+        <li>The graph fades unrelated nodes, making it easier to analyze direct and indirect relationships.</li>
+    </ul>
+    
+    </section>
+    <section id="use-case-managing-articles">
+    <h2>Use Case: Viewing and Managing Recommended and History Articles</h2>
+
+    <h3>Objective</h3>
+    <p>
+        A user wants to explore their history and recommended articles using the dashboard, interact with the content, and manage favorites.
+    </p>
+
+    <h3>Steps to Use the Dashboard</h3>
+
+    <h4>1. Accessing the Dashboard</h4>
+    <ul>
+        <li>The user navigates to the main dashboard page, which includes two key sections:
+            <ul>
+                <li><strong>History Card (<code>&lt;app-history-card&gt;</code>)</strong> displaying previously accessed articles.</li>
+                <li><strong>Recommended Articles (<code>&lt;app-recommended-articles&gt;</code>)</strong> showing personalized recommendations.</li>
+            </ul>
+        </li>
+    </ul>
+    
+    <h4>2. Browsing the Articles</h4>
+    <ul>
+        <li>Both sections display articles in a <strong>carousel format</strong>, allowing easy horizontal navigation.</li>
+        <li>
+            Each article is displayed as a card, containing:
+            <ul>
+                <li><strong>Thumbnail Image</strong> (clickable for detailed view)</li>
+                <li><strong>Title & Author</strong></li>
+                <li><strong>Publication Date</strong></li>
+                <li><strong>Keywords</strong> (for topic identification)</li>
+                <li><strong>Favorite Button</strong> (to save/remove favorites)</li>
+            </ul>
+        </li>
+    </ul>
+    
+
+    <h4>3. Navigating Through Articles</h4>
+    <ul>
+        <li>
+            The user can scroll left or right through articles using the navigation buttons 
+            (<code>chevron_left</code> and <code>chevron_right</code>).
+        </li>
+        <li>The current position in the list is updated dynamically.</li>
+    </ul>
+    
+
+    <h4>4. Viewing an Article in Detail</h4>
+    <ul>
+        <li>
+            Clicking on an article thumbnail opens a modal dialog 
+            (<code>ArticleDetailsModalComponent</code>), providing a more detailed view of the article.
+        </li>
+    </ul>
+    
+
+    <h4>5. Managing Favorites</h4>
+    <ul>
+        <li>
+            The user can toggle favorites using the heart 
+            (<code>favorite_border</code> or <code>favorite</code>) icon.
+        </li>
+        <li>
+            Favorite articles are saved to the backend 
+            (<code>http://127.0.0.1:5000/user/favorites</code>).
+        </li>
+        <li>
+            Removing an article from favorites updates its status immediately.
+        </li>
+    </ul>
+    
+
+    <h4>6. JSON-LD Structured Data Integration</h4>
+    <ul>
+        <li>
+            The system automatically generates structured metadata for articles, 
+            enabling better SEO and search indexing.
+        </li>
+        <li>
+            Each article is converted into <strong>Schema.org JSON-LD format</strong>, 
+            which gets dynamically injected into the page.
+        </li>
+    </ul>
+    
+
+    <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+       
+
+        <div style="text-align: center;">
+            <img src="assets/image4.png" alt="Graph visualization 3" style="width: 100%; height: auto; margin: 10px;">
+            <p>Figure 4: Dashboard</p>
+        </div>
+    </div>
+    </section>
+
+
+    <section id="use-case-searching-articles">
+        <h2>Use Case: Searching for Articles</h2>
+
+        <h3>Objective</h3>
+        <p>
+            A user wants to search for articles using either a simple keyword search or an advanced search with additional filters.
+        </p>
+    
+        <h3>Steps to Use the Search Functionality</h3>
+    
+        <h4>1. Accessing the Search Page</h4>
+        <ul>
+            <li>The user navigates to the <strong>Search Articles</strong> page.</li>
+            <li>The page consists of:
+                <ul>
+                    <li>A <strong>search bar</strong> for keyword-based searches.</li>
+                    <li>An <strong>"Advanced Search"</strong> toggle button to access detailed filtering options.</li>
+                    <li>A <strong>results section</strong> displaying articles matching the search criteria.</li>
+                </ul>
+            </li>
+        </ul>        
+    
+        <h4>2. Performing a Simple Search</h4>
+        <ul>
+            <li>The user types a keyword or phrase in the search input field.</li>
+            <li>Clicks the <strong>"Search"</strong> button to submit the query.</li>
+            <li>The system performs a basic keyword search and returns relevant articles.</li>
+            <li>Each result displays:
+                <ul>
+                    <li><strong>Title, author, publication date, and keywords</strong></li>
+                    <li><strong>A brief abstract of the article</strong></li>
+                    <li><strong>A favorite button</strong> to save the article</li>
+                    <li><strong>A "Read More"</strong> button linking to the full article</li>
+                </ul>
+            </li>
+        </ul>
+        
+    
+        <h5>Match Types:</h5>
+        <ul>
+            <li><strong>Exact Matches:</strong> Articles that contain the exact phrase entered.</li>
+            <li><strong>Partial Matches:</strong> Articles containing words related to the search term.</li>
+        </ul>
+        
+    
+        <h4>3. Using Advanced Search</h4>
+        <ul>
+            <li>The user clicks the <strong>"Advanced Search"</strong> button to expand additional filters.</li>
+            <li>Additional search fields allow filtering by:
+                <ul>
+                    <li><strong>Language</strong></li>
+                    <li><strong>Author Name</strong></li>
+                    <li><strong>Author Nationality</strong></li>
+                    <li><strong>Publisher</strong></li>
+                    <li><strong>Minimum & Maximum Word Count</strong></li>
+                    <li><strong>Published Date Range</strong></li>
+                </ul>
+            </li>
+            <li>The user fills in relevant fields and clicks <strong>"Submit Advanced Search"</strong>.</li>
+            <li>The system performs a detailed search based on selected filters.</li>
+        </ul>
+        
+    
+        <h4>4. Viewing Search Results</h4>
+        <ul>
+            <li>Matching articles appear in a scrollable list.</li>
+            <li>The results dynamically update to reflect:
+                <ul>
+                    <li><strong>Exact or Partial Match</strong> types (displayed using color-coded labels).</li>
+                    <li><strong>Filters applied</strong> from the Advanced Search.</li>
+                </ul>
+            </li>
+            <li>The user can click an article’s thumbnail to open a <strong>detailed modal view</strong>.</li>
+        </ul>
+        
+    
+        <h4>5. Managing Favorites</h4>
+        <ul>
+            <li>The user can toggle favorite articles by clicking the heart icon.</li>
+            <li>The system updates the user’s favorites in the backend.</li>
+        </ul>
+        
+    
+        <h4>6. Resetting the Search</h4>
+        <ul>
+            <li>The user can clear filters using the <strong>"Clear Filters"</strong> button.</li>
+            <li>The <strong>"Reset"</strong> button clears the search form and results.</li>
+        </ul>
+        
+
+        <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+       
+
+            <div style="text-align: center;">
+                <img src="assets/image5.png" alt="Graph visualization 3" style="width: 100%; height: auto; margin: 10px;">
+                <p>Figure 5: Search Results Interface</p>
+            </div>
+            <div style="text-align: center;">
+                <img src="assets/image6.webp" alt="Graph visualization 3" style="width: 100%; height: auto; margin: 10px;">
+                <p>Figure 6: Advanced Search Results Interface</p>
+            </div>
+        </div>
+    
+    </section>
+    <section id="demonstration-video">
+        <h2>Demonstration Video</h2>
+        <p>
+            The following video provides an overview of the NePr (Web News Provenance) system, showcasing its features and functionality in action.
+        </p>
+        <iframe 
+            src="https://www.youtube.com/embed/NJOjtEMS2p4" 
+            title="YouTube video player" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen 
+            style="width: 100%; height: 315px; border: none;">
+        </iframe>
+    </section>
+    
+    
+    
+
+    <section id="acknowledgements">
+        <h3>Reference Resources</h3>
+        <ul>
+            <li><a href="https://www.w3.org/standards/semanticweb/" target="_blank" rel="noopener noreferrer">W3C Semantic Web Standards</a></li>
+            <li><a href="https://angular.io/docs" target="_blank" rel="noopener noreferrer">Angular Documentation</a></li>
+            <li><a href="https://flask.palletsprojects.com" target="_blank" rel="noopener noreferrer">Flask Documentation</a></li>
+            <li><a href="https://www.dublincore.org/" target="_blank" rel="noopener noreferrer">DCMI Official Website</a></li>
+        </ul>
+        
+    </section>
+</body>
+</html>
