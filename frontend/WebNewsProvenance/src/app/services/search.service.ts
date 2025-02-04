@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Injectable({
@@ -8,10 +8,16 @@ import { Observable } from 'rxjs';
 export class SearchService {
   constructor(private http: HttpClient) {}
 
+  private getAuthHeaders(): HttpHeaders {
+    const jwtToken = localStorage.getItem('access_token');
+    return new HttpHeaders().set('Authorization', `Bearer ${jwtToken}`);
+  }
   searchKeywords(keywords: string): Observable<any> {
     const url = `http://127.0.0.1:5000/article/search?keywords=${encodeURIComponent(keywords)}`;
-    return this.http.get(url);
+    const headers = this.getAuthHeaders();
+    return this.http.get(url, { headers });
   }
+
   advancedSearch(params: any): Observable<any> {
     let queryParams = new HttpParams();
     Object.keys(params).forEach(key => {
@@ -20,6 +26,7 @@ export class SearchService {
       }
     });
     const url = `http://127.0.0.1:5000/article/search/advanced`;
-    return this.http.get(url, { params: queryParams });
+    const headers = this.getAuthHeaders();
+    return this.http.get(url, { params: queryParams, headers });
   }
 }

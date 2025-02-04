@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild, OnDestroy, Inject, Renderer2 } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 
 interface RDFTriple {
   s: { type: string; value: string };
@@ -146,7 +146,9 @@ export class GraphVisualizationComponent implements OnInit, OnDestroy {
 
   fetchData() {
     console.log('Fetching data');
-    this.http.get<any>('http://127.0.0.1:5000/article/data').subscribe({
+    const jwtToken = localStorage.getItem('access_token');
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${jwtToken}`);
+    this.http.get<any>('http://127.0.0.1:5000/article/data', { headers }).subscribe({
       next: (response) => {
         console.log('Data received:', response);
         const triples: RDFTriple[] = this.transformResponseToTriples(response);
